@@ -433,7 +433,7 @@
             pushCloudSync();
         }
 
-        /* CLOUD SYNC LOGIC VIA FREE JSONBIN / PUBLIC ENDPOINT */
+        /* CLOUD SYNC LOGIC VIA KV / PUBLIC ENDPOINT */
         function openSyncModal() { document.getElementById('sync-modal').classList.add('active'); }
         function closeSyncModal() { document.getElementById('sync-modal').classList.remove('active'); }
 
@@ -452,9 +452,7 @@
             btn.classList.add('sync-active');
             btn.innerText = '🟢 Live Sync ON';
             
-            // Initial pull
             pullCloudSync();
-            // Poll every 5 seconds for live card show updates
             if (syncInterval) clearInterval(syncInterval);
             syncInterval = setInterval(pullCloudSync, 5000);
         }
@@ -463,19 +461,40 @@
             if (!syncRoomId) return;
             try {
                 const payload = { caught: Array.from(caughtSet), variants: pokemonVariants };
-                await fetch(`https://api.jsonbin.io/v3/b`, {
+                await fetch(`https://keyvalue.immanuel.co/api/KeyVal/UpdateValue/${encodeURIComponent(syncRoomId)}/data`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-Master-Key': '$2a$10$X... (free public bin)' },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
             } catch (e) {
-                // Fallback to npoint or local sync simulation if bin key is missing
+                console.error("Cloud sync push failed", e);
             }
         }
 
         async function pullCloudSync() {
             if (!syncRoomId) return;
-            // Pull latest collection state
+            try {
+                const res = await fetch(`https://keyvalue.immanuel.co/api/KeyVal/GetValue/${encodeURIComponent(syncRoomId)}/data`);
+                if (res.ok) {
+                    const d = await res.json();
+                    if (d) {
+                        let updated = false;
+                        if (d.caught) {
+                            caughtSet = new Set(d.caught);
+                            localStorage.setItem('gigadex_caught_v5', JSON.stringify(Array.from(caughtSet)));
+                            updated = true;
+                        }
+                        if (d.variants) {
+                            pokemonVariants = d.variants;
+                            localStorage.setItem('gigadex_variants_v5', JSON.stringify(pokemonVariants));
+                            updated = true;
+                        }
+                        if (updated) renderAppGrid();
+                    }
+                }
+            } catch (e) {
+                console.error("Cloud sync pull failed", e);
+            }
         }
 
         function exportSaveData() {
