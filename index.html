@@ -299,7 +299,6 @@
         const SUPABASE_URL = 'https://zcftbzsscdpxsqphbhqr.supabase.co/rest/v1/';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpjZnRienNzY2RweHNxcGhiaHFyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI2ODQzNjMsImV4cCI6MjEwODI2MDM2M30.fl8iztMIyqlAA4go8oIUzKXFdB9JfQR93vu-aLgwPPU';
         const SUPABASE_TABLE = 'gigadex_rooms';
-        const ADMIN_EMAIL = 'zealousdan@gmail.com';
         const SUPABASE_PROJECT_URL = SUPABASE_URL.replace(/\/rest\/v1\/?$/, '');
         const supabaseClient = window.supabase.createClient(SUPABASE_PROJECT_URL, SUPABASE_ANON_KEY);
         const isInviteLink = window.location.hash.includes('type=invite');
@@ -497,6 +496,10 @@
 
         function closeSyncModal() { document.getElementById('sync-modal').classList.remove('active'); }
 
+        function isAdminUser(user = currentUser) {
+            return user?.app_metadata?.role === 'admin';
+        }
+
         async function loadAuthorizedRooms() {
             const { data, error } = await supabaseClient
                 .from(SUPABASE_TABLE)
@@ -524,8 +527,7 @@
             }
 
             document.getElementById('sync-room-select').disabled = authorizedRooms.length === 0;
-            document.getElementById('admin-room-controls').hidden =
-                currentUser?.email?.toLowerCase() !== ADMIN_EMAIL;
+            document.getElementById('admin-room-controls').hidden = !isAdminUser();
         }
 
         async function connectSync() {
@@ -556,7 +558,7 @@
             const input = document.getElementById('new-room-id');
             const roomId = input.value.trim();
             const message = document.getElementById('sync-message');
-            if (currentUser?.email?.toLowerCase() !== ADMIN_EMAIL) {
+            if (!isAdminUser()) {
                 message.textContent = 'Only the administrator can create rooms.';
                 return;
             }
@@ -586,7 +588,7 @@
             const email = document.getElementById('invite-email').value.trim().toLowerCase();
             const roomId = document.getElementById('sync-room-select').value;
             const message = document.getElementById('sync-message');
-            if (currentUser?.email?.toLowerCase() !== ADMIN_EMAIL) {
+            if (!isAdminUser()) {
                 message.textContent = 'Only the administrator can send invitations.';
                 return;
             }
@@ -599,7 +601,18 @@
                 const { data, error } = await supabaseClient.functions.invoke('send-room-invite', {
                     body: { email, room_id: roomId }
                 });
-                if (error) throw error;
+                if (error) {
+                    let detail = error.message;
+                    if (error.context instanceof Response) {
+                        try {
+                            const responseBody = await error.context.clone().json();
+                            detail = responseBody.error || responseBody.message || detail;
+                        } catch {
+                            detail = `${detail} (HTTP ${error.context.status})`;
+                        }
+                    }
+                    throw new Error(detail);
+                }
                 document.getElementById('invite-email').value = '';
                 message.textContent = `${data.message} (${email}, ${roomId})`;
             } catch (error) {
