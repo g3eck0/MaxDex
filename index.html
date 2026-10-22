@@ -157,6 +157,14 @@
         .auth-card p { color: var(--text-secondary); font-size: 0.88rem; margin-bottom: 18px; }
         .auth-card input { display: block; width: 100%; margin-bottom: 10px; }
         .auth-message { min-height: 1.2em; color: var(--text-secondary); font-size: 0.82rem; margin-top: 12px; }
+        .sync-issue-overlay {
+            position: fixed; inset: 0; z-index: 10000; display: none; align-items: center; justify-content: center;
+            padding: 20px; background: rgba(11, 15, 25, 0.98); text-align: center;
+        }
+        .sync-issue-overlay.active { display: flex; }
+        .sync-issue-card { max-width: 420px; }
+        .sync-issue-card h1 { font-size: 1.5rem; margin-bottom: 10px; }
+        .sync-issue-card p { color: var(--text-secondary); margin-bottom: 18px; }
         body.app-locked > header, body.app-locked > main,
         body.app-locked > .modal-overlay, body.app-locked > .sync-setup-modal { display: none !important; }
         body:not(.app-locked) > #auth-screen { display: none; }
@@ -272,13 +280,15 @@
     <div class="sync-setup-modal" id="sync-modal">
         <div class="sync-card">
             <h3 style="margin-bottom:10px; font-weight:800;">Authorized Rooms</h3>
-            <p style="font-size:0.82rem; color:var(--text-secondary); margin-bottom:14px;">
-                Only rooms shared with your account are available here.
+            <p id="room-access-description" style="font-size:0.82rem; color:var(--text-secondary); margin-bottom:14px;">
+                Your room is assigned by an administrator and connects automatically.
             </p>
-            <label class="modal-label" for="sync-room-select">YOUR ROOMS</label>
-            <select id="sync-room-select" class="sync-input"></select>
+            <div id="admin-room-selector" hidden>
+                <label class="modal-label" for="sync-room-select">SELECT ROOM</label>
+                <select id="sync-room-select" class="sync-input"></select>
+            </div>
             <div style="display:flex; gap:8px;">
-                <button class="icon-btn" style="flex:1; background:var(--accent-primary); border-color:var(--accent-primary);" onclick="connectSync()">Connect</button>
+                <button class="icon-btn" id="connect-room-btn" style="flex:1; background:var(--accent-primary); border-color:var(--accent-primary);" onclick="connectSync()">Connect</button>
                 <button class="icon-btn" onclick="closeSyncModal()">Cancel</button>
             </div>
             <section id="admin-room-controls" hidden style="margin-top:18px; border-top:1px solid var(--border-color); padding-top:14px;">
@@ -291,6 +301,14 @@
                 <button class="icon-btn" style="width:100%;" onclick="inviteToSelectedRoom()">Send invitation</button>
             </section>
             <p class="auth-message" id="sync-message" role="status"></p>
+        </div>
+    </div>
+
+    <div class="sync-issue-overlay" id="sync-issue-overlay" role="alert" aria-live="assertive">
+        <div class="sync-issue-card">
+            <h1>Sync Issue...</h1>
+            <p>Please try refreshing your browser.</p>
+            <button class="icon-btn" style="background:var(--accent-primary); border-color:var(--accent-primary);" onclick="window.location.reload()">Refresh browser</button>
         </div>
     </div>
 
@@ -513,7 +531,7 @@
             if (authorizedRooms.length === 0) {
                 const option = document.createElement('option');
                 option.value = '';
-                option.textContent = 'No rooms have been shared with you';
+                option.textContent = 'No rooms are available';
                 select.appendChild(option);
             } else {
                 authorizedRooms.forEach(roomId => {
@@ -522,16 +540,28 @@
                     option.textContent = roomId;
                     select.appendChild(option);
                 });
-                const previousRoom = localStorage.getItem('gigadex_sync_room');
-                if (authorizedRooms.includes(previousRoom)) select.value = previousRoom;
+                if (isAdminUser()) {
+                    const previousRoom = localStorage.getItem('gigadex_sync_room');
+                    if (authorizedRooms.includes(previousRoom)) select.value = previousRoom;
+                }
             }
 
-            document.getElementById('sync-room-select').disabled = authorizedRooms.length === 0;
-            document.getElementById('admin-room-controls').hidden = !isAdminUser();
+            const isAdmin = isAdminUser();
+            document.getElementById('admin-room-selector').hidden = !isAdmin;
+            document.getElementById('connect-room-btn').hidden = !isAdmin;
+            document.getElementById('sync-room-select').disabled = !isAdmin || authorizedRooms.length === 0;
+            document.getElementById('admin-room-controls').hidden = !isAdmin;
+            document.getElementById('room-access-description').textContent = isAdmin
+                ? 'Select a room to connect. You can manage rooms and assign accounts below.'
+                : 'Your room is assigned by an administrator and connects automatically.';
         }
 
         async function connectSync() {
             const room = document.getElementById('sync-room-select').value;
+            if (!isAdminUser() && room !== syncRoomId) {
+                document.getElementById('sync-message').textContent = 'Only an administrator can change your room.';
+                return;
+            }
             if (!authorizedRooms.includes(room)) {
                 document.getElementById('sync-message').textContent = 'Select a room shared with your account.';
                 return;
@@ -543,7 +573,7 @@
             syncRoomId = room;
             try {
                 await pullCloudSync();
-                localStorage.setItem('gigadex_sync_room', room);
+                if (isAdminUser()) localStorage.setItem('gigadex_sync_room', room);
                 closeSyncModal();
                 startLiveSync();
             } catch (error) {
@@ -551,6 +581,7 @@
                 if (previousRoom) startLiveSync();
                 console.error('Supabase connection failed', error);
                 document.getElementById('sync-message').textContent = `Could not connect: ${error.message}`;
+                reportSyncError(error);
             }
         }
 
@@ -625,16 +656,18 @@
             const btn = document.getElementById('sync-status-btn');
             btn.classList.add('sync-active');
             btn.innerText = '🟢 Live Sync ON';
-            pullCloudSync().catch(reportSyncError);
             if (syncInterval) clearInterval(syncInterval);
             syncInterval = setInterval(() => pullCloudSync().catch(reportSyncError), 5000);
         }
 
         function reportSyncError(error) {
             console.error('Supabase sync failed', error);
+            if (syncInterval) clearInterval(syncInterval);
+            syncInterval = null;
             const btn = document.getElementById('sync-status-btn');
             btn.classList.remove('sync-active');
             btn.innerText = '⚠ Sync Error';
+            document.getElementById('sync-issue-overlay').classList.add('active');
         }
 
         async function pushCloudSync() {
@@ -707,10 +740,12 @@
                 signInForm.hidden = false;
                 inviteForm.hidden = true;
                 syncRoomId = '';
+                authorizedRooms = [];
                 if (syncInterval) clearInterval(syncInterval);
                 syncInterval = null;
                 document.getElementById('sync-status-btn').classList.remove('sync-active');
                 document.getElementById('sync-status-btn').innerText = '📡 Live Sync';
+                document.getElementById('sync-issue-overlay').classList.remove('active');
                 return;
             }
 
@@ -729,18 +764,34 @@
 
             signInForm.hidden = true;
             inviteForm.hidden = true;
-            document.body.classList.remove('app-locked');
+            document.body.classList.add('app-locked');
             try {
                 await loadAuthorizedRooms();
-                const rememberedRoom = localStorage.getItem('gigadex_sync_room');
-                if (!syncRoomId && authorizedRooms.includes(rememberedRoom)) {
-                    syncRoomId = rememberedRoom;
+                if (isAdminUser()) {
+                    const rememberedRoom = localStorage.getItem('gigadex_sync_room');
+                    if (authorizedRooms.includes(rememberedRoom)) {
+                        syncRoomId = rememberedRoom;
+                    }
+                } else {
+                    if (authorizedRooms.length !== 1) {
+                        throw new Error(authorizedRooms.length === 0
+                            ? 'No room is assigned to your account. Ask an administrator to assign one.'
+                            : 'More than one room is assigned to your account. Ask an administrator to assign a single room.');
+                    }
+                    syncRoomId = authorizedRooms[0];
+                }
+
+                if (syncRoomId && authorizedRooms.includes(syncRoomId)) {
+                    await pullCloudSync();
+                    if (isAdminUser()) localStorage.setItem('gigadex_sync_room', syncRoomId);
                     startLiveSync();
                 }
             } catch (error) {
                 console.error('Could not load authorized rooms', error);
                 document.getElementById('sync-status-btn').innerText = '⚠ Room access error';
+                reportSyncError(error);
             }
+            document.body.classList.remove('app-locked');
         }
 
         document.getElementById('sign-in-form').addEventListener('submit', async event => {
