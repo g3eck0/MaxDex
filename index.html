@@ -143,7 +143,7 @@
             z-index: 300; display: none; align-items: center; justify-content: center; padding: 16px;
         }
         .sync-setup-modal.active { display: flex; }
-        .sync-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; max-width: 380px; width: 100%; padding: 20px; }
+        .sync-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; max-width: 380px; width: 100%; padding: 20px; max-height: 90vh; overflow-y: auto; }
         .sync-input { width: 100%; background: var(--bg-body); border: 1px solid var(--border-color); border-radius: 10px; padding: 10px; color: var(--text-primary); margin-bottom: 12px; font-size: 0.9rem; outline: none; }
         .auth-screen {
             min-height: 100vh; display: flex; align-items: center; justify-content: center;
@@ -269,9 +269,9 @@
                 <option value="Promo">Promo</option>
             </select>
 
-            <label class="modal-label">TCG SETS WHERE THIS POKÉMON CAN BE FOUND (LIVE)</label>
+            <label class="modal-label">TCG SETS WHERE THIS POKÉMON CAN BE FOUND (OFFLINE CATALOG)</label>
             <div class="tcg-sets-box" id="tcg-sets-container">
-                <div class="loading-sets">Click to load TCG sets...</div>
+                <div class="loading-sets">Loading offline TCG catalog...</div>
             </div>
         </div>
     </div>
@@ -299,6 +299,14 @@
                 <label class="modal-label" for="invite-email">INVITE EMAIL TO SELECTED ROOM</label>
                 <input type="email" id="invite-email" class="sync-input" placeholder="friend@example.com">
                 <button class="icon-btn" style="width:100%;" onclick="inviteToSelectedRoom()">Send invitation</button>
+            </section>
+            <section id="admin-tcg-controls" hidden style="margin-top:18px; border-top:1px solid var(--border-color); padding-top:14px;">
+                <h4 style="margin-bottom:6px;">Admin: TCG catalog</h4>
+                <p style="font-size:0.78rem; color:var(--text-secondary); margin-bottom:10px;">
+                    Edit <code>tcg-sets.json</code>, deploy the file, then reload the catalog here.
+                </p>
+                <button class="icon-btn" id="tcg-resync-btn" style="width:100%;" onclick="forceTcgDataSync()">Force TCG catalog re-sync</button>
+                <p class="auth-message" id="tcg-sync-message" role="status"></p>
             </section>
             <p class="auth-message" id="sync-message" role="status"></p>
         </div>
@@ -331,6 +339,8 @@
         let caughtSet = new Set(JSON.parse(localStorage.getItem('gigadex_caught_v5') || '[]'));
         let pokemonVariants = JSON.parse(localStorage.getItem('gigadex_variants_v5') || '{}');
         let setCache = {};
+        let tcgCatalog = null;
+        let tcgSetById = new Map();
         let syncRoomId = '';
         let syncInterval = null;
         let currentUser = null;
@@ -426,53 +436,117 @@
         async function fetchTcgSetsForPokemon(name, id) {
             const container = document.getElementById('tcg-sets-container');
             if (setCache[id]) {
-                renderSets(setCache[id]);
+                renderSets(setCache[id], name);
                 return;
             }
 
-            container.innerHTML = `<div class="loading-sets">Fetching sets from Pokémon TCG API...</div>`;
+            container.replaceChildren();
+            const loading = document.createElement('div');
+            loading.className = 'loading-sets';
+            loading.textContent = 'Loading offline TCG catalog...';
+            container.appendChild(loading);
             try {
-                const res = await fetch(`https://api.pokemontcg.io/v2/cards?q=name:"${encodeURIComponent(name)}"&pageSize=15`);
-                const data = await res.json();
-                
-                if (data && data.data && data.data.length > 0) {
-                    const setsMap = new Map();
-                    data.data.forEach(card => {
-                        if (card.set) {
-                            setsMap.set(card.set.id, {
-                                name: card.set.name,
-                                series: card.set.series,
-                                releaseDate: card.set.releaseDate
-                            });
-                        }
-                    });
-                    const sets = Array.from(setsMap.values()).sort((a,b) => new Date(b.releaseDate) - new Date(a.releaseDate));
-                    setCache[id] = sets;
-                    renderSets(sets);
-                } else {
-                    container.innerHTML = `<div class="loading-sets">No TCG sets found for ${name}.</div>`;
-                }
-            } catch (err) {
-                container.innerHTML = `<div class="loading-sets">Could not connect to TCG API.</div>`;
+                const catalog = await loadTcgCatalog();
+                const setIds = catalog.pokemonSets[String(id)] || [];
+                const sets = setIds
+                    .map(setId => tcgSetById.get(setId))
+                    .filter(Boolean)
+                    .sort((a, b) => new Date(b.releaseDate) - new Date(a.releaseDate));
+                setCache[id] = sets;
+                renderSets(sets, name);
+            } catch (error) {
+                console.error('Could not load the offline TCG catalog', error);
+                const message = document.createElement('div');
+                message.className = 'loading-sets';
+                message.textContent = `Could not load the TCG catalog: ${error.message}`;
+                container.replaceChildren(message);
             }
         }
 
-        function renderSets(sets) {
-            const container = document.getElementById('tcg-sets-container');
-            if (!sets || sets.length === 0) {
-                container.innerHTML = `<div class="loading-sets">No sets found.</div>`;
+        async function loadTcgCatalog(forceReload = false) {
+            if (tcgCatalog && !forceReload) return tcgCatalog;
+
+            const catalogUrl = new URL('tcg-sets.json', document.baseURI);
+            if (forceReload) catalogUrl.searchParams.set('reload', String(Date.now()));
+            const response = await fetch(catalogUrl, { cache: forceReload ? 'no-store' : 'default' });
+            if (!response.ok) throw new Error(`Catalog request failed (HTTP ${response.status}).`);
+
+            const catalog = await response.json();
+            if (catalog?.schemaVersion !== 1 || !Array.isArray(catalog.sets)
+                || !catalog.pokemonSets || typeof catalog.pokemonSets !== 'object') {
+                throw new Error('The catalog file has an invalid format.');
+            }
+
+            const setById = new Map();
+            for (const set of catalog.sets) {
+                if (!set || typeof set.id !== 'string' || typeof set.name !== 'string'
+                    || typeof set.series !== 'string' || typeof set.releaseDate !== 'string'
+                    || setById.has(set.id)) {
+                    throw new Error('The catalog contains an invalid or duplicate set.');
+                }
+                setById.set(set.id, set);
+            }
+            for (const [pokemonId, setIds] of Object.entries(catalog.pokemonSets)) {
+                if (!/^\d+$/.test(pokemonId) || !Array.isArray(setIds)
+                    || setIds.some(setId => typeof setId !== 'string' || !setById.has(setId))) {
+                    throw new Error(`The catalog has invalid set links for Pokédex number ${pokemonId}.`);
+                }
+            }
+
+            tcgCatalog = catalog;
+            tcgSetById = setById;
+            setCache = {};
+            return tcgCatalog;
+        }
+
+        async function forceTcgDataSync() {
+            const message = document.getElementById('tcg-sync-message');
+            const button = document.getElementById('tcg-resync-btn');
+            if (!isAdminUser()) {
+                message.textContent = 'Only the administrator can reload the TCG catalog.';
                 return;
             }
-            let html = '';
-            sets.forEach(s => {
-                html += `
-                    <div class="tcg-set-item">
-                        <div class="set-name">${s.name}</div>
-                        <div class="set-series">${s.series} • ${s.releaseDate || 'N/A'}</div>
-                    </div>
-                `;
-            });
-            container.innerHTML = html;
+
+            button.disabled = true;
+            message.textContent = 'Reloading catalog from tcg-sets.json...';
+            try {
+                const catalog = await loadTcgCatalog(true);
+                if (currentModalId) {
+                    const pokemon = rawPokemonData.find(entry => entry.id === currentModalId);
+                    if (pokemon) await fetchTcgSetsForPokemon(pokemon.name, pokemon.id);
+                }
+                message.textContent = `Catalog reloaded: ${catalog.sets.length} sets for ${Object.keys(catalog.pokemonSets).length} Pokémon.`;
+            } catch (error) {
+                console.error('Could not re-sync the TCG catalog', error);
+                message.textContent = `Could not reload the TCG catalog: ${error.message}`;
+            } finally {
+                button.disabled = false;
+            }
+        }
+
+        function renderSets(sets, pokemonName) {
+            const container = document.getElementById('tcg-sets-container');
+            if (!sets || sets.length === 0) {
+                const emptyMessage = document.createElement('div');
+                emptyMessage.className = 'loading-sets';
+                emptyMessage.textContent = `No TCG sets found for ${pokemonName}.`;
+                container.replaceChildren(emptyMessage);
+                return;
+            }
+            const fragment = document.createDocumentFragment();
+            for (const set of sets) {
+                const item = document.createElement('div');
+                item.className = 'tcg-set-item';
+                const name = document.createElement('div');
+                name.className = 'set-name';
+                name.textContent = set.name;
+                const details = document.createElement('div');
+                details.className = 'set-series';
+                details.textContent = `${set.series} • ${set.releaseDate || 'N/A'}`;
+                item.append(name, details);
+                fragment.appendChild(item);
+            }
+            container.replaceChildren(fragment);
         }
 
         function closeModal() {
@@ -551,6 +625,7 @@
             document.getElementById('connect-room-btn').hidden = !isAdmin;
             document.getElementById('sync-room-select').disabled = !isAdmin || authorizedRooms.length === 0;
             document.getElementById('admin-room-controls').hidden = !isAdmin;
+            document.getElementById('admin-tcg-controls').hidden = !isAdmin;
             document.getElementById('room-access-description').textContent = isAdmin
                 ? 'Select a room to connect. You can manage rooms and assign accounts below.'
                 : 'Your room is assigned by an administrator and connects automatically.';
