@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MaxDex Pro v5 - Live Cloud Sync</title>
+    <title>MaxDex - Live Cloud Sync</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -21,6 +21,7 @@
             --accent-glow: rgba(59, 130, 246, 0.25);
             --caught-green: #10b981;
             --caught-glow: rgba(16, 185, 129, 0.2);
+            --filter-control-height: 34px;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
         body { background-color: var(--bg-body); color: var(--text-primary); min-height: 100vh; padding-bottom: 80px; }
@@ -29,37 +30,68 @@
         .app-header {
             position: sticky; top: 0; z-index: 100;
             background: var(--bg-glass); backdrop-filter: blur(16px);
-            border-bottom: 1px solid var(--border-color); padding: 10px 16px;
+            border-bottom: 1px solid var(--border-color); padding: 6px 12px;
         }
         .header-content {
-            max-width: 1400px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+            max-width: 1400px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 8px;
         }
-        .brand { display: flex; align-items: center; gap: 10px; }
+        .header-brand-group { display: flex; align-items: center; gap: 14px; min-width: 0; }
+        .brand { display: flex; align-items: center; gap: 8px; }
         .brand-icon {
-            width: 28px; height: 28px; background: linear-gradient(135deg, #ef4444 50%, #f1f5f9 50%);
+            width: 24px; height: 24px; background: linear-gradient(135deg, #ef4444 50%, #f1f5f9 50%);
             border-radius: 50%; border: 2px solid #0b0f19; position: relative;
         }
         .brand-icon::after {
             content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
             width: 6px; height: 6px; background: #0b0f19; border-radius: 50%; border: 2px solid white;
         }
-        .brand-title { font-size: 1.1rem; font-weight: 800; }
+        .brand-title { font-size: 1rem; font-weight: 800; }
         
         /* DASHBOARD */
         .dashboard-compact {
-            display: flex; align-items: center; gap: 16px; background: rgba(15, 23, 42, 0.7);
-            border: 1px solid var(--border-color); border-radius: 10px; padding: 6px 14px; font-size: 0.85rem;
+            display: flex; align-items: center; gap: 10px; background: rgba(15, 23, 42, 0.7);
+            border: 1px solid var(--border-color); border-radius: 8px; padding: 4px 9px; font-size: 0.75rem;
         }
-        .dash-item { display: flex; align-items: center; gap: 6px; font-weight: 600; }
+        .dash-item { display: flex; align-items: center; gap: 4px; font-weight: 600; white-space: nowrap; }
+        .dash-label-short { display: none; }
         .dash-val { font-weight: 800; color: var(--text-primary); }
         
-        .quick-actions { display: flex; gap: 6px; }
         .icon-btn {
             background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-primary);
             padding: 6px 12px; border-radius: 8px; font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: 0.2s;
         }
         .icon-btn:hover { background: var(--bg-card-hover); border-color: var(--accent-primary); }
         .icon-btn.sync-active { background: var(--caught-green); border-color: var(--caught-green); color: white; }
+        .header-menu { position: relative; flex: 0 0 auto; }
+        .header-menu-toggle { width: 36px; height: 36px; padding: 0; display: grid; place-items: center; }
+        .header-menu-icon { display: grid; gap: 4px; }
+        .header-menu-icon span { display: block; width: 16px; height: 2px; border-radius: 2px; background: currentColor; }
+        .header-menu-items {
+            position: absolute; top: calc(100% + 8px); right: 0; z-index: 110;
+            display: none; min-width: 176px; padding: 6px; background: var(--bg-card);
+            border: 1px solid var(--border-color); border-radius: 10px;
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+        }
+        .header-menu.open .header-menu-items { display: grid; gap: 3px; }
+        .header-menu-items .icon-btn { width: 100%; text-align: left; }
+        .header-menu-items .icon-btn.sync-active { background: var(--caught-green); }
+        @media (max-width: 480px) {
+            .app-header { padding: 5px 8px; }
+            .header-content { gap: 6px; }
+            .header-brand-group { gap: 6px; }
+            .brand { gap: 6px; }
+            .brand-title { font-size: 0.95rem; }
+            .dashboard-compact { gap: 6px; padding: 3px 5px; font-size: 0.68rem; }
+            .dash-item { gap: 3px; }
+        }
+        @media (max-width: 360px) {
+            .dashboard-compact { gap: 4px; font-size: 0.65rem; }
+            .dash-label-full {
+                position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+                overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+            }
+            .dash-label-short { display: inline; }
+        }
 
         /* MAIN */
         .main-container { max-width: 1400px; margin: 16px auto; padding: 0 16px; }
@@ -88,45 +120,59 @@
         }
         .filter-chip.active { background: var(--accent-primary); border-color: var(--accent-primary); color: white; }
         .filter-chip.status-caught.active { background: var(--caught-green); border-color: var(--caught-green); }
+        .status-chip { height: var(--filter-control-height); display: inline-flex; align-items: center; }
+        .search-row { display: flex; align-items: center; gap: 8px; }
+        .search-row .search-wrapper { flex: 1 1 auto; min-width: 0; }
+        .sort-control { display: inline-flex; align-items: center; flex: 0 0 auto; }
+        .sort-select {
+            height: var(--filter-control-height); padding: 0 28px 0 10px; background: var(--bg-body);
+            border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);
+            font-size: 0.78rem; font-weight: 600; cursor: pointer;
+        }
         .type-filter-scroll { display: flex; align-items: center; gap: 6px; flex: 0 0 auto; }
         .type-filter-chip {
             display: inline-flex; align-items: center; justify-content: flex-start; flex: 0 0 40px;
-            width: 40px; height: 34px; padding: 0; overflow: hidden;
+            width: 40px; height: var(--filter-control-height); padding: 0; overflow: hidden;
             background: var(--bg-body); border: 1px solid var(--border-color); border-radius: 8px; cursor: pointer;
         }
-        .type-filter-chip .type-icon { width: 155px; height: 34px; }
+        .type-filter-chip .type-icon { width: 155px; height: var(--filter-control-height); }
         .type-filter-chip.active { border: 2px solid #f8fafc; box-shadow: 0 0 0 2px var(--accent-primary); }
         .type-filter-chip:focus-visible { outline: 2px solid var(--accent-primary); outline-offset: 2px; }
 
         /* RESPONSIVE GRID (Min 3 per row mobile) */
         .pokemon-grid {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 8px;
         }
-        @media (min-width: 640px) { .pokemon-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 14px; } }
+        @media (min-width: 640px) {
+            .pokemon-grid { grid-template-columns: repeat(auto-fill, 160px); justify-content: center; gap: 14px; }
+        }
 
         .poke-card {
             background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px;
-            padding: 8px; display: flex; flex-direction: column; align-items: center; position: relative; cursor: pointer; transition: 0.2s;
+            height: 90px; padding: 6px; display: grid; grid-template-rows: auto auto auto; align-content: center; gap: 2px; min-width: 0;
+            position: relative; cursor: pointer; transition: 0.2s; touch-action: manipulation; user-select: none;
         }
         .poke-card:hover { transform: translateY(-3px); border-color: var(--accent-primary); }
         .poke-card.caught { border-color: rgba(16, 185, 129, 0.5); background: linear-gradient(180deg, rgba(16, 185, 129, 0.08) 0%, var(--bg-card) 100%); }
         .poke-card.caught::after {
-            content: '✓'; position: absolute; top: 6px; right: 6px; width: 18px; height: 18px;
-            background: var(--caught-green); color: white; border-radius: 50%; font-size: 0.65rem; font-weight: bold;
+            content: '✓'; position: absolute; bottom: 4px; right: 4px; width: 14px; height: 14px;
+            background: var(--caught-green); color: white; border-radius: 50%; font-size: 0.55rem; font-weight: bold;
             display: flex; align-items: center; justify-content: center;
         }
-        .poke-dex-id { position: absolute; top: 6px; left: 8px; font-size: 0.65rem; font-weight: 700; color: var(--text-muted); }
-        .poke-img-wrap { width: 75px; height: 75px; margin: 8px 0 0; display: flex; align-items: center; justify-content: center; }
-        .poke-img { width: 75px; height: 75px; object-fit: contain; image-rendering: pixelated; }
-        .poke-name { font-size: 0.82rem; font-weight: 700; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; }
-        .poke-types { height: 20px; display: flex; align-items: center; justify-content: center; gap: 5px; margin-top: 2px; }
+        .poke-dex-id { position: relative; z-index: 2; justify-self: start; font-size: 0.72rem; font-weight: 700; color: var(--text-primary); }
+        .poke-card-body { display: grid; grid-template-columns: minmax(0, 1fr) 22px; align-items: center; justify-items: center; min-width: 0; min-height: 0; }
+        .poke-img-wrap { width: min(100%, 40px); height: 40px; display: flex; align-items: center; justify-content: center; }
+        .poke-img { width: 40px; height: 40px; object-fit: contain; image-rendering: pixelated; }
+        .poke-card-footer { position: relative; z-index: 1; display: flex; align-items: baseline; justify-content: center; min-width: 0; padding-right: 12px; }
+        .poke-name { min-width: 0; font-size: 0.72rem; font-weight: 700; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .poke-types { justify-self: end; display: flex; flex-direction: column; align-items: flex-end; justify-content: center; gap: 2px; }
         .type-badge {
-            display: inline-flex; align-items: center; justify-content: flex-start; flex: 0 0 28px;
-            width: 28px; height: 20px; overflow: hidden; border-radius: 4px;
+            display: inline-flex; align-items: center; justify-content: flex-start; flex: 0 0 18px;
+            width: 18px; height: 13px; overflow: hidden; border-radius: 3px;
         }
-        .type-icon { flex: 0 0 auto; width: 91px; height: 20px; max-width: none; }
+        .type-icon { flex: 0 0 auto; width: 59px; height: 13px; max-width: none; }
 
         /* MODAL */
         .modal-overlay {
@@ -230,7 +276,7 @@
 <body class="app-locked">
     <section class="auth-screen" id="auth-screen">
         <form class="auth-card" id="sign-in-form">
-            <h1>Sign in to Gigadex</h1>
+            <h1>Sign in to MaxDex</h1>
             <p>Accounts are invited by the administrator. Sign in with your invited email address.</p>
             <label class="modal-label" for="auth-email">EMAIL</label>
             <input class="sync-input" id="auth-email" type="email" autocomplete="username" required>
@@ -251,33 +297,49 @@
     </section>
     <header class="app-header">
         <div class="header-content">
-            <div class="brand">
-                <div class="brand-icon"></div>
-                <span class="brand-title">Gigadex Pro v5 (Sync)</span>
-            </div>
-            
-            <div class="dashboard-compact">
-                <div class="dash-item">Total: <span class="dash-val">1025</span></div>
-                <div class="dash-item">Caught: <span class="dash-val" id="stat-caught" style="color:var(--caught-green)">0</span></div>
-                <div class="dash-item">Left: <span class="dash-val" id="stat-remaining">1025</span></div>
-                <div class="dash-item" id="stat-pct">0.0%</div>
+            <div class="header-brand-group">
+                <div class="brand">
+                    <div class="brand-icon"></div>
+                    <span class="brand-title">MaxDex</span>
+                </div>
+                <div class="dashboard-compact">
+                    <div class="dash-item"><span class="dash-label-full">Total:</span><span class="dash-label-short" aria-hidden="true">T:</span> <span class="dash-val">1025</span></div>
+                    <div class="dash-item"><span class="dash-label-full">Caught:</span><span class="dash-label-short" aria-hidden="true">C:</span> <span class="dash-val" id="stat-caught" style="color:var(--caught-green)">0</span></div>
+                    <div class="dash-item"><span class="dash-label-full">Left:</span><span class="dash-label-short" aria-hidden="true">L:</span> <span class="dash-val" id="stat-remaining">1025</span></div>
+                    <div class="dash-item" id="stat-pct">0.0%</div>
+                </div>
             </div>
 
-            <div class="quick-actions">
-                <button class="icon-btn" id="sync-status-btn" onclick="openSyncModal()">📡 Live Sync</button>
-                <button class="icon-btn" onclick="exportSaveData()">💾 Save</button>
-                <button class="icon-btn" onclick="document.getElementById('import-file').click()">📂 Load</button>
-                <button class="icon-btn" id="sign-out-btn" onclick="signOut()">Sign out</button>
-                <input type="file" id="import-file" style="display:none" onchange="importSaveData(event)">
+            <div class="header-menu">
+                <button class="icon-btn header-menu-toggle" id="header-menu-toggle" type="button"
+                    aria-label="Open menu" aria-expanded="false" aria-controls="header-menu-items"
+                    onclick="toggleHeaderMenu()">
+                    <span class="header-menu-icon" aria-hidden="true"><span></span><span></span><span></span></span>
+                </button>
+                <div class="header-menu-items" id="header-menu-items">
+                    <button class="icon-btn" id="sync-status-btn" type="button" onclick="setHeaderMenuOpen(false); openSyncModal()">📡 Live Sync</button>
+                    <button class="icon-btn" type="button" onclick="setHeaderMenuOpen(false); exportSaveData()">💾 Save</button>
+                    <button class="icon-btn" type="button" onclick="setHeaderMenuOpen(false); document.getElementById('import-file').click()">📂 Load</button>
+                    <button class="icon-btn" id="sign-out-btn" type="button" onclick="setHeaderMenuOpen(false); signOut()">Sign out</button>
+                    <input type="file" id="import-file" hidden onchange="importSaveData(event)">
+                </div>
             </div>
         </div>
     </header>
 
     <main class="main-container">
         <section class="search-filter-panel">
-            <div class="search-wrapper">
-                <input type="text" id="app-search" class="search-input" placeholder="Search by name or #Dex number..." oninput="handleSearchFilter()">
-                <button type="button" class="search-clear" id="search-clear" aria-label="Clear search" title="Clear search" hidden onclick="clearSearch()">×</button>
+            <div class="search-row">
+                <div class="search-wrapper">
+                    <input type="text" id="app-search" class="search-input" placeholder="Search by name or #Dex number..." oninput="handleSearchFilter()">
+                    <button type="button" class="search-clear" id="search-clear" aria-label="Clear search" title="Clear search" hidden onclick="clearSearch()">×</button>
+                </div>
+                <label class="sort-control" for="sort-order">
+                    <select class="sort-select" id="sort-order" aria-label="Sort Pokémon" onchange="setSortOrder(this.value)">
+                        <option value="number">Number</option>
+                        <option value="name">Name (A–Z)</option>
+                    </select>
+                </label>
             </div>
             
             <div class="chip-scroll">
@@ -411,10 +473,32 @@
             bug: 7, ghost: 8, steel: 9, fire: 10, water: 11, grass: 12,
             electric: 13, psychic: 14, ice: 15, dragon: 16, dark: 17, fairy: 18
         };
-        let activeStatus = 'all', activeGen = 'all', activeType = 'all', searchQuery = '', currentModalId = null, catchAnimationTimeout = null, catchAudioContext = null;
+        let activeStatus = 'all', activeGen = 'all', activeType = 'all', activeSort = 'number', searchQuery = '', currentModalId = null, catchAnimationTimeout = null, catchAudioContext = null;
 
-        let caughtSet = new Set(JSON.parse(localStorage.getItem('gigadex_caught_v5') || '[]'));
-        let pokemonVariants = JSON.parse(localStorage.getItem('gigadex_variants_v5') || '{}');
+        const STORAGE_KEYS = {
+            caught: 'maxdex_caught_v5',
+            variants: 'maxdex_variants_v5',
+            syncRoom: 'maxdex_sync_room',
+            sortOrder: 'maxdex_sort_order'
+        };
+
+        function getMigratedStorageValue(key, legacyKey, fallbackValue) {
+            const currentValue = localStorage.getItem(key);
+            if (currentValue !== null) return currentValue;
+
+            const legacyValue = localStorage.getItem(legacyKey);
+            if (legacyValue !== null) localStorage.setItem(key, legacyValue);
+            return legacyValue === null ? fallbackValue : legacyValue;
+        }
+
+        const savedSortOrder = localStorage.getItem(STORAGE_KEYS.sortOrder);
+        if (savedSortOrder === 'number' || savedSortOrder === 'name') {
+            activeSort = savedSortOrder;
+            document.getElementById('sort-order').value = activeSort;
+        }
+
+        let caughtSet = new Set(JSON.parse(getMigratedStorageValue(STORAGE_KEYS.caught, 'gigadex_caught_v5', '[]')));
+        let pokemonVariants = JSON.parse(getMigratedStorageValue(STORAGE_KEYS.variants, 'gigadex_variants_v5', '{}'));
         let setCache = {};
         let tcgCatalog = null;
         let tcgSetById = new Map();
@@ -493,6 +577,15 @@
             renderAppGrid();
         }
 
+        function setSortOrder(order) {
+            if (order !== 'number' && order !== 'name') {
+                throw new Error(`Unsupported sort order: ${order}`);
+            }
+            activeSort = order;
+            localStorage.setItem(STORAGE_KEYS.sortOrder, order);
+            renderAppGrid();
+        }
+
         function setTypeFilter(type) {
             activeType = activeType === type ? 'all' : type;
             document.querySelectorAll('.type-filter-chip').forEach(button => {
@@ -545,6 +638,9 @@
                 }
                 return true;
             });
+            filtered.sort(activeSort === 'name'
+                ? (a, b) => a.name.localeCompare(b.name) || a.id - b.id
+                : (a, b) => a.id - b.id);
 
             const fragment = document.createDocumentFragment();
             filtered.forEach(p => {
@@ -556,14 +652,58 @@
 
                 card.innerHTML = `
                     <span class="poke-dex-id">${paddedId}</span>
-                    <div class="poke-img-wrap">
-                        <img class="poke-img" src="${spriteUrl}" alt="${p.name}" loading="lazy" onerror="this.src='https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/0.png'">
+                    <div class="poke-card-body">
+                        <div class="poke-img-wrap">
+                            <img class="poke-img" src="${spriteUrl}" alt="${p.name}" loading="lazy" onerror="this.src='https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/0.png'">
+                        </div>
+                        <div class="poke-types" aria-label="${p.name} types"></div>
                     </div>
-                    <div class="poke-name">${p.name}</div>
-                    <div class="poke-types" aria-label="${p.name} types"></div>
+                    <div class="poke-card-footer">
+                        <span class="poke-name">${p.name}</span>
+                    </div>
                 `;
                 renderPokemonTypes(p.id, card.querySelector('.poke-types'));
-                card.onclick = () => openModal(p);
+                card.title = `${p.name} — tap to view, press and hold to mark caught`;
+                card.setAttribute('role', 'button');
+                card.tabIndex = 0;
+
+                let longPressTimeout = null;
+                let longPressTriggered = false;
+                const cancelLongPress = () => {
+                    clearTimeout(longPressTimeout);
+                    longPressTimeout = null;
+                };
+                card.addEventListener('pointerdown', event => {
+                    if (event.pointerType === 'mouse' && event.button !== 0) return;
+                    longPressTriggered = false;
+                    longPressTimeout = setTimeout(() => {
+                        longPressTriggered = true;
+                        markPokemonCaught(p.id, card);
+                    }, 600);
+                });
+                card.addEventListener('pointerup', cancelLongPress);
+                card.addEventListener('pointerleave', () => {
+                    cancelLongPress();
+                    longPressTriggered = false;
+                });
+                card.addEventListener('pointercancel', () => {
+                    cancelLongPress();
+                    longPressTriggered = false;
+                });
+                card.addEventListener('contextmenu', event => event.preventDefault());
+                card.onclick = () => {
+                    if (longPressTriggered) {
+                        longPressTriggered = false;
+                        return;
+                    }
+                    openModal(p);
+                };
+                card.onkeydown = event => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        openModal(p);
+                    }
+                };
                 fragment.appendChild(card);
             });
 
@@ -576,6 +716,18 @@
             document.getElementById('stat-caught').innerText = caught;
             document.getElementById('stat-remaining').innerText = rem;
             document.getElementById('stat-pct').innerText = pct;
+        }
+
+        function markPokemonCaught(pokemonId, card) {
+            if (caughtSet.has(pokemonId)) return;
+            caughtSet.add(pokemonId);
+            localStorage.setItem(STORAGE_KEYS.caught, JSON.stringify(Array.from(caughtSet)));
+            card.classList.add('caught');
+            card.setAttribute('aria-pressed', 'true');
+            updateDashboard();
+            if (typeof navigator.vibrate === 'function') navigator.vibrate(35);
+            playCaughtChime();
+            pushCloudSync().catch(reportSyncError);
         }
 
         async function openModal(p) {
@@ -772,7 +924,7 @@
             if (caughtSet.has(currentModalId)) caughtSet.delete(currentModalId);
             else caughtSet.add(currentModalId);
 
-            localStorage.setItem('gigadex_caught_v5', JSON.stringify(Array.from(caughtSet)));
+            localStorage.setItem(STORAGE_KEYS.caught, JSON.stringify(Array.from(caughtSet)));
             updateModalCaughtUI(caughtSet.has(currentModalId));
             renderAppGrid();
             if (isNowCaught) {
@@ -800,7 +952,7 @@
         function saveModalVariant() {
             if (!currentModalId) return;
             pokemonVariants[currentModalId] = document.getElementById('modal-variant').value;
-            localStorage.setItem('gigadex_variants_v5', JSON.stringify(pokemonVariants));
+            localStorage.setItem(STORAGE_KEYS.variants, JSON.stringify(pokemonVariants));
             renderAppGrid();
             pushCloudSync().catch(reportSyncError);
         }
@@ -840,7 +992,7 @@
                     select.appendChild(option);
                 });
                 if (isAdminUser()) {
-                    const previousRoom = localStorage.getItem('gigadex_sync_room');
+                    const previousRoom = getMigratedStorageValue(STORAGE_KEYS.syncRoom, 'gigadex_sync_room', null);
                     if (authorizedRooms.includes(previousRoom)) select.value = previousRoom;
                 }
             }
@@ -873,7 +1025,7 @@
             syncRoomId = room;
             try {
                 await pullCloudSync();
-                if (isAdminUser()) localStorage.setItem('gigadex_sync_room', room);
+                if (isAdminUser()) localStorage.setItem(STORAGE_KEYS.syncRoom, room);
                 closeSyncModal();
                 startLiveSync();
             } catch (error) {
@@ -952,6 +1104,19 @@
             }
         }
 
+        function setHeaderMenuOpen(isOpen) {
+            const menu = document.querySelector('.header-menu');
+            const toggle = document.getElementById('header-menu-toggle');
+            menu.classList.toggle('open', isOpen);
+            toggle.setAttribute('aria-expanded', String(isOpen));
+            toggle.setAttribute('aria-label', isOpen ? 'Close menu' : 'Open menu');
+        }
+
+        function toggleHeaderMenu() {
+            const isOpen = document.getElementById('header-menu-toggle').getAttribute('aria-expanded') === 'true';
+            setHeaderMenuOpen(!isOpen);
+        }
+
         function startLiveSync() {
             const btn = document.getElementById('sync-status-btn');
             btn.classList.add('sync-active');
@@ -997,8 +1162,8 @@
 
             caughtSet = new Set(data.caught);
             pokemonVariants = data.variants;
-            localStorage.setItem('gigadex_caught_v5', JSON.stringify(Array.from(caughtSet)));
-            localStorage.setItem('gigadex_variants_v5', JSON.stringify(pokemonVariants));
+            localStorage.setItem(STORAGE_KEYS.caught, JSON.stringify(Array.from(caughtSet)));
+            localStorage.setItem(STORAGE_KEYS.variants, JSON.stringify(pokemonVariants));
             renderAppGrid();
         }
 
@@ -1006,7 +1171,7 @@
             const data = JSON.stringify({ caught: Array.from(caughtSet), variants: pokemonVariants }, null, 2);
             const blob = new Blob([data], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
-            const a = document.createElement('a'); a.href = url; a.download = 'gigadex_save.json'; a.click();
+            const a = document.createElement('a'); a.href = url; a.download = 'maxdex_save.json'; a.click();
         }
 
         function importSaveData(e) {
@@ -1018,8 +1183,8 @@
                     const d = JSON.parse(event.target.result);
                     if (d.caught) caughtSet = new Set(d.caught);
                     if (d.variants) pokemonVariants = d.variants;
-                    localStorage.setItem('gigadex_caught_v5', JSON.stringify(Array.from(caughtSet)));
-                    localStorage.setItem('gigadex_variants_v5', JSON.stringify(pokemonVariants));
+                    localStorage.setItem(STORAGE_KEYS.caught, JSON.stringify(Array.from(caughtSet)));
+                    localStorage.setItem(STORAGE_KEYS.variants, JSON.stringify(pokemonVariants));
                     renderAppGrid();
                     alert('Save imported successfully!');
                 } catch (err) { alert('Invalid save file.'); }
@@ -1068,7 +1233,7 @@
             try {
                 await loadAuthorizedRooms();
                 if (isAdminUser()) {
-                    const rememberedRoom = localStorage.getItem('gigadex_sync_room');
+                    const rememberedRoom = getMigratedStorageValue(STORAGE_KEYS.syncRoom, 'gigadex_sync_room', null);
                     if (authorizedRooms.includes(rememberedRoom)) {
                         syncRoomId = rememberedRoom;
                     }
@@ -1083,7 +1248,7 @@
 
                 if (syncRoomId && authorizedRooms.includes(syncRoomId)) {
                     await pullCloudSync();
-                    if (isAdminUser()) localStorage.setItem('gigadex_sync_room', syncRoomId);
+                    if (isAdminUser()) localStorage.setItem(STORAGE_KEYS.syncRoom, syncRoomId);
                     startLiveSync();
                 }
             } catch (error) {
@@ -1160,6 +1325,7 @@
                 alert(`Could not sign out: ${error.message}`);
                 return;
             }
+            localStorage.removeItem(STORAGE_KEYS.syncRoom);
             localStorage.removeItem('gigadex_sync_room');
         }
 
@@ -1176,6 +1342,18 @@
         }).catch(error => {
             console.error('Authentication initialization failed', error);
             setAuthMessage('Could not initialize authentication. Check the Supabase configuration.');
+        });
+
+        document.addEventListener('click', event => {
+            const menu = document.querySelector('.header-menu');
+            if (!menu.contains(event.target)) setHeaderMenuOpen(false);
+        });
+        document.addEventListener('keydown', event => {
+            const toggle = document.getElementById('header-menu-toggle');
+            if (event.key === 'Escape' && toggle.getAttribute('aria-expanded') === 'true') {
+                setHeaderMenuOpen(false);
+                toggle.focus();
+            }
         });
 
         renderTypeFilters();
