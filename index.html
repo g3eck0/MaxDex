@@ -3,211 +3,357 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>MaxDex</title>
+  <title>Pokédex Gigadex Pro v5 - Live Cloud Sync</title>
   <style>
     :root {
-      --bg: #0b1120;
-      --panel: #111827;
-      --panel-2: #1f2937;
-      --text: #f8fafc;
-      --muted: #94a3b8;
-      --accent: #60a5fa;
-      --accent-2: #34d399;
-      --border: rgba(148, 163, 184, 0.28);
+      --bg-body: #0b0f19;
+      --bg-card: #151d2a;
+      --bg-card-hover: #1c273a;
+      --bg-glass: rgba(21, 29, 42, 0.9);
+      --border-color: #243146;
+      --text-primary: #f1f5f9;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+      --accent-primary: #3b82f6;
+      --accent-glow: rgba(59, 130, 246, 0.25);
+      --caught-green: #10b981;
+      --caught-glow: rgba(16, 185, 129, 0.2);
     }
 
-    * { box-sizing: border-box; }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
     body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: var(--bg);
-      color: var(--text);
+      background: var(--bg-body);
+      color: var(--text-primary);
+      min-height: 100vh;
+      padding-bottom: 80px;
     }
 
-    .container {
-      max-width: 1200px;
+    .app-header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: var(--bg-glass);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border-color);
+      padding: 10px 16px;
+    }
+
+    .header-content {
+      max-width: 1400px;
       margin: 0 auto;
-      padding: 24px 16px 48px;
-    }
-
-    .toolbar {
       display: flex;
-      flex-wrap: wrap;
       align-items: center;
       justify-content: space-between;
       gap: 12px;
-      margin-bottom: 18px;
-    }
-
-    .title {
-      font-size: 2rem;
-      font-weight: 800;
-      letter-spacing: 0.04em;
-      margin: 0;
-    }
-
-    .controls {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      align-items: center;
-    }
-
-    input[type="text"] {
-      width: min(420px, 100%);
-      background: var(--panel);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      color: var(--text);
-      padding: 12px 14px;
-      font-size: 1rem;
-    }
-
-    .sort-group {
-      display: flex;
-      gap: 8px;
       flex-wrap: wrap;
     }
 
-    .sort-btn {
-      border: 1px solid var(--border);
-      background: var(--panel);
-      color: var(--text);
-      border-radius: 10px;
-      padding: 10px 14px;
-      font-weight: 700;
-      cursor: pointer;
-      transition: 0.15s ease;
+    .brand { display: flex; align-items: center; gap: 10px; }
+    .brand-icon {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: linear-gradient(135deg, #ef4444 50%, #f1f5f9 50%);
+      border: 2px solid #0b0f19; position: relative;
     }
-
-    .sort-btn.active {
-      background: var(--accent);
-      border-color: var(--accent);
-      color: #031827;
+    .brand-icon::after {
+      content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      width: 6px; height: 6px; border-radius: 50%; background: #0b0f19; border: 2px solid white;
     }
+    .brand-title { font-size: 1.1rem; font-weight: 800; }
 
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-      gap: 14px;
-    }
+    .main-container { max-width: 1400px; margin: 16px auto; padding: 0 16px; }
 
-    .card {
-      background: linear-gradient(180deg, var(--panel), var(--panel-2));
-      border: 1px solid var(--border);
+    .search-filter-panel {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
       border-radius: 14px;
-      padding: 12px;
-      text-align: center;
-      min-height: 180px;
+      padding: 14px;
+      margin-bottom: 16px;
       display: flex;
       flex-direction: column;
-      justify-content: space-between;
-      gap: 8px;
+      gap: 10px;
     }
 
-    .dex-id {
+    .search-input {
+      width: 100%;
+      background: var(--bg-body);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 10px 14px;
+      color: var(--text-primary);
+      font-size: 0.9rem;
+      outline: none;
+    }
+    .search-input:focus { border-color: var(--accent-primary); }
+
+    .chip-scroll { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; }
+    .chip-scroll::-webkit-scrollbar { display: none; }
+
+    .filter-chip {
+      background: var(--bg-body);
+      border: 1px solid var(--border-color);
+      color: var(--text-secondary);
+      padding: 5px 12px;
+      border-radius: 16px;
       font-size: 0.78rem;
-      color: var(--muted);
-      font-weight: 700;
-      text-align: left;
+      font-weight: 600;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+    .filter-chip.active {
+      background: var(--accent-primary);
+      border-color: var(--accent-primary);
+      color: white;
     }
 
-    .sprite {
-      width: 90px;
-      height: 90px;
-      margin: 0 auto;
-      object-fit: contain;
-      image-rendering: pixelated;
-      filter: drop-shadow(0 8px 18px rgba(96, 165, 250, 0.35));
+    .sort-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .sort-label {
+      color: var(--text-secondary);
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
     }
 
-    .name {
-      font-size: 1rem;
-      font-weight: 700;
-      margin: 0;
+    .pokemon-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
     }
+    @media (min-width: 640px) {
+      .pokemon-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 14px; }
+    }
+
+    .poke-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    .poke-card:hover { transform: translateY(-3px); border-color: var(--accent-primary); }
+    .poke-card.caught { border-color: rgba(16, 185, 129, 0.5); }
+    .poke-dex-id {
+      position: absolute;
+      top: 6px; left: 8px;
+      font-size: 0.65rem; font-weight: 700; color: var(--text-muted);
+    }
+    .poke-img-wrap {
+      width: 75px; height: 75px; margin: 8px 0 0;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .poke-img { width: 75px; height: 75px; object-fit: contain; image-rendering: pixelated; }
+    .poke-name {
+      font-size: 0.82rem; font-weight: 700; text-align: center;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%;
+    }
+
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+      display: none; align-items: center; justify-content: center; padding: 16px;
+      z-index: 100;
+    }
+    .modal-overlay.active { display: flex; }
+    .modal-card {
+      background: #151d2a;
+      border: 1px solid #334155;
+      border-radius: 18px;
+      max-width: 500px; width: 100%;
+      padding: 20px;
+      color: white;
+    }
+    .modal-topbar { display:flex; align-items:center; gap:10px; margin-bottom:14px; }
+    .modal-dex { color: #93c5fd; font-size:1rem; font-weight:800; }
+    .modal-generation { background:#202b3b; border:1px solid #475569; border-radius:6px; padding:4px 8px; font-size:0.68rem; }
+    .modal-close { margin-left:auto; }
+    .modal-title { font-size: clamp(1rem, 5vw, 2rem); font-weight: 800; margin: 4px 0 12px; }
+    .modal-img-wrap { width: 100%; aspect-ratio: 1; display: grid; place-items: center; }
+    .modal-img { width: 100%; height: 100%; object-fit: contain; }
   </style>
 </head>
 <body>
-  <div class="container">
-    <div class="toolbar">
-      <h1 class="title">MaxDex</h1>
-
-      <div class="controls">
-        <input id="search" type="text" placeholder="Search Pokémon..." aria-label="Search Pokémon" />
-
-        <div class="sort-group" aria-label="Sort options">
-          <button type="button" class="sort-btn active" data-sort="number">Sort by Number</button>
-          <button type="button" class="sort-btn" data-sort="alpha">Sort by A–Z</button>
-        </div>
+  <header class="app-header">
+    <div class="header-content">
+      <div class="brand">
+        <div class="brand-icon"></div>
+        <span class="brand-title">Gigadex Pro v5 (Sync)</span>
       </div>
     </div>
+  </header>
 
-    <div id="grid" class="grid" aria-live="polite"></div>
+  <main class="main-container">
+    <section class="search-filter-panel">
+      <input type="text" id="app-search" class="search-input" placeholder="Search by name or #Dex number..." />
+
+      <div class="chip-scroll">
+        <div class="filter-chip status-chip active" data-status="all">All</div>
+        <div class="filter-chip status-chip" data-status="caught">✓ Caught</div>
+        <div class="filter-chip status-chip" data-status="uncaught">⏳ Missing</div>
+      </div>
+
+      <div class="chip-scroll">
+        <div class="filter-chip gen-chip active" data-gen="all">All Gens</div>
+        <div class="filter-chip gen-chip" data-gen="1">Gen 1</div>
+        <div class="filter-chip gen-chip" data-gen="2">Gen 2</div>
+        <div class="filter-chip gen-chip" data-gen="3">Gen 3</div>
+        <div class="filter-chip gen-chip" data-gen="4">Gen 4</div>
+        <div class="filter-chip gen-chip" data-gen="5">Gen 5</div>
+        <div class="filter-chip gen-chip" data-gen="6">Gen 6</div>
+        <div class="filter-chip gen-chip" data-gen="7">Gen 7</div>
+        <div class="filter-chip gen-chip" data-gen="8">Gen 8</div>
+        <div class="filter-chip gen-chip" data-gen="9">Gen 9</div>
+      </div>
+
+      <div class="sort-row">
+        <span class="sort-label">Sort:</span>
+        <div class="filter-chip sort-chip active" data-sort="number"># Number</div>
+        <div class="filter-chip sort-chip" data-sort="alphabetical">A–Z</div>
+      </div>
+    </section>
+
+    <div class="pokemon-grid" id="pokemon-grid"></div>
+  </main>
+
+  <div class="modal-overlay" id="poke-modal">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modal-name">
+      <div class="modal-topbar">
+        <span class="modal-dex" id="modal-dex-id">#0000</span>
+        <span class="modal-generation" id="modal-generation">GEN 1</span>
+        <button class="modal-close" aria-label="Close Pokémon details" onclick="closeModal()">✕</button>
+      </div>
+      <h2 class="modal-title" id="modal-name">Name</h2>
+      <div class="modal-img-wrap">
+        <img id="modal-img" class="modal-img" src="" alt="" />
+      </div>
+    </div>
   </div>
 
   <script>
-    const pokemonNames = [
-      'Bulbasaur','Ivysaur','Venusaur','Charmander','Charmeleon','Charizard','Squirtle','Wartortle','Blastoise','Caterpie','Metapod','Butterfree','Weedle','Kakuna','Beedrill','Pidgey','Pidgeotto','Pidgeot','Rattata','Raticate','Spearow','Fearow','Ekans','Arbok','Pikachu','Raichu','Sandshrew','Sandslash','Nidoran♀','Nidorina','Nidoqueen','Nidoran♂','Nidoking','Clefairy','Clefable','Vulpix','Ninetales','Jigglypuff','Wigglytuff','Zubat','Golbat','Oddish','Gloom','Vileplume','Paras','Parasect','Venonat','Venomoth','Diglett','Dugtrio','Meowth','Persian','Psyduck','Golduck','Mankey','Primeape','Growlithe','Arcanine','Poliwag','Poliwhirl','Poliwrath','Abra','Kadabra','Alakazam','Machop','Machoke','Machamp','Bellsprout','Weepinbell','Victreebel','Tentacool','Tentacruel','Geodude','Graveler','Golem','Ponyta','Rapidash','Slowpoke','Slowbro','Magnemite','Magneton','Farfetch\'d','Doduo','Dodrio','Seel','Dewgong','Grimer','Muk','Shellder','Cloyster','Gastly','Haunter','Gengar','Onix','Drowzee','Hypno','Krabby','Kingler','Voltorb','Electrode','Exeggcute','Exeggutor','Cubone','Marowak','Hitmonlee','Hitmonchan','Lickitung','Koffing','Weezing','Rhyhorn','Rhydon','Chansey','Tangela','Kangaskhan','Horsea','Seadra','Goldeen','Seaking','Staryu','Starmie','Mr. Mime','Scyther','Jynx','Electabuzz','Magmar','Pinsir','Tauros','Magikarp','Gyarados','Lapras','Ditto','Eevee','Vaporeon','Jolteon','Flareon','Porygon','Omanyte','Omastar','Kabuto','Kabutops','Aerodactyl','Snorlax','Articuno','Zapdos','Moltres','Dratini','Dragonair','Dragonite','Mewtwo','Mew'
+    const allPokemon = [
+      {id:1,name:'Bulbasaur',type:['grass','poison']},{id:2,name:'Ivysaur',type:['grass','poison']},{id:3,name:'Venusaur',type:['grass','poison']},{id:4,name:'Charmander',type:['fire']},{id:5,name:'Charmeleon',type:['fire']},{id:6,name:'Charizard',type:['fire','flying']},{id:7,name:'Squirtle',type:['water']},{id:8,name:'Wartortle',type:['water']},{id:9,name:'Blastoise',type:['water']},{id:10,name:'Caterpie',type:['bug']},{id:11,name:'Metapod',type:['bug']},{id:12,name:'Butterfree',type:['bug','flying']},{id:13,name:'Weedle',type:['bug','poison']},{id:14,name:'Kakuna',type:['bug','poison']},{id:15,name:'Beedrill',type:['bug','poison']},{id:16,name:'Pidgey',type:['normal','flying']},{id:17,name:'Pidgeotto',type:['normal','flying']},{id:18,name:'Pidgeot',type:['normal','flying']},{id:19,name:'Rattata',type:['normal']},{id:20,name:'Raticate',type:['normal']},{id:21,name:'Spearow',type:['normal','flying']},{id:22,name:'Fearow',type:['normal','flying']},{id:23,name:'Ekans',type:['poison']},{id:24,name:'Arbok',type:['poison']},{id:25,name:'Pikachu',type:['electric']},{id:26,name:'Raichu',type:['electric']},{id:27,name:'Sandshrew',type:['ground']},{id:28,name:'Sandslash',type:['ground']},{id:29,name:'Nidoran♀',type:['poison']},{id:30,name:'Nidorina',type:['poison']},{id:31,name:'Nidoqueen',type:['poison','ground']},{id:32,name:'Nidoran♂',type:['poison']},{id:33,name:'Nidorino',type:['poison']},{id:34,name:'Nidoking',type:['poison','ground']},{id:35,name:'Clefairy',type:['fairy']},{id:36,name:'Clefable',type:['fairy']},{id:37,name:'Vulpix',type:['fire']},{id:38,name:'Ninetales',type:['fire']},{id:39,name:'Jigglypuff',type:['normal','fairy']},{id:40,name:'Wigglytuff',type:['normal','fairy']},{id:41,name:'Zubat',type:['poison','flying']},{id:42,name:'Golbat',type:['poison','flying']},{id:43,name:'Oddish',type:['grass','poison']},{id:44,name:'Gloom',type:['grass','poison']},{id:45,name:'Vileplume',type:['grass','poison']},{id:46,name:'Paras',type:['bug','grass']},{id:47,name:'Parasect',type:['bug','grass']},{id:48,name:'Venonat',type:['bug','poison']},{id:49,name:'Venomoth',type:['bug','poison']},{id:50,name:'Diglett',type:['ground']},{id:51,name:'Dugtrio',type:['ground']},{id:52,name:'Meowth',type:['normal']},{id:53,name:'Persian',type:['normal']},{id:54,name:'Psyduck',type:['water']},{id:55,name:'Golduck',type:['water']},{id:56,name:'Mankey',type:['fighting']},{id:57,name:'Primeape',type:['fighting']},{id:58,name:'Growlithe',type:['fire']},{id:59,name:'Arcanine',type:['fire']},{id:60,name:'Poliwag',type:['water']},{id:61,name:'Poliwhirl',type:['water']},{id:62,name:'Poliwrath',type:['water','fighting']},{id:63,name:'Abra',type:['psychic']},{id:64,name:'Kadabra',type:['psychic']},{id:65,name:'Alakazam',type:['psychic']},{id:66,name:'Machop',type:['fighting']},{id:67,name:'Machoke',type:['fighting']},{id:68,name:'Machamp',type:['fighting']},{id:69,name:'Bellsprout',type:['grass','poison']},{id:70,name:'Weepinbell',type:['grass','poison']},{id:71,name:'Victreebel',type:['grass','poison']},{id:72,name:'Tentacool',type:['water','poison']},{id:73,name:'Tentacruel',type:['water','poison']},{id:74,name:'Geodude',type:['rock','ground']},{id:75,name:'Graveler',type:['rock','ground']},{id:76,name:'Golem',type:['rock','ground']},{id:77,name:'Ponyta',type:['fire']},{id:78,name:'Rapidash',type:['fire']},{id:79,name:'Slowpoke',type:['water','psychic']},{id:80,name:'Slowbro',type:['water','psychic']},{id:81,name:'Magnemite',type:['electric','steel']},{id:82,name:'Magneton',type:['electric','steel']},{id:83,name:'Farfetch\'d',type:['normal','flying']},{id:84,name:'Doduo',type:['normal','flying']},{id:85,name:'Dodrio',type:['normal','flying']},{id:86,name:'Seel',type:['water']},{id:87,name:'Dewgong',type:['water','ice']},{id:88,name:'Grimer',type:['poison']},{id:89,name:'Muk',type:['poison']},{id:90,name:'Shellder',type:['water']},{id:91,name:'Cloyster',type:['water','ice']},{id:92,name:'Gastly',type:['ghost','poison']},{id:93,name:'Haunter',type:['ghost','poison']},{id:94,name:'Gengar',type:['ghost','poison']},{id:95,name:'Onix',type:['rock','ground']},{id:96,name:'Drowzee',type:['psychic']},{id:97,name:'Hypno',type:['psychic']},{id:98,name:'Krabby',type:['water']},{id:99,name:'Kingler',type:['water']},{id:100,name:'Voltorb',type:['electric']},{id:101,name:'Electrode',type:['electric']},{id:102,name:'Exeggcute',type:['grass','psychic']},{id:103,name:'Exeggutor',type:['grass','psychic']},{id:104,name:'Cubone',type:['ground']},{id:105,name:'Marowak',type:['ground']},{id:106,name:'Hitmonlee',type:['fighting']},{id:107,name:'Hitmonchan',type:['fighting']},{id:108,name:'Lickitung',type:['normal']},{id:109,name:'Koffing',type:['poison']},{id:110,name:'Weezing',type:['poison']},{id:111,name:'Rhyhorn',type:['ground','rock']},{id:112,name:'Rhydon',type:['ground','rock']},{id:113,name:'Chansey',type:['normal']},{id:114,name:'Tangela',type:['grass']},{id:115,name:'Kangaskhan',type:['normal']},{id:116,name:'Horsea',type:['water']},{id:117,name:'Seadra',type:['water']},{id:118,name:'Goldeen',type:['water']},{id:119,name:'Seaking',type:['water']},{id:120,name:'Staryu',type:['water']},{id:121,name:'Starmie',type:['water','psychic']},{id:122,name:'Mr. Mime',type:['psychic','fairy']},{id:123,name:'Scyther',type:['bug','flying']},{id:124,name:'Jynx',type:['ice','psychic']},{id:125,name:'Electabuzz',type:['electric']},{id:126,name:'Magmar',type:['fire']},{id:127,name:'Pinsir',type:['bug']},{id:128,name:'Tauros',type:['normal']},{id:129,name:'Magikarp',type:['water']},{id:130,name:'Gyarados',type:['water','flying']},{id:131,name:'Lapras',type:['water','ice']},{id:132,name:'Ditto',type:['normal']},{id:133,name:'Eevee',type:['normal']},{id:134,name:'Vaporeon',type:['water']},{id:135,name:'Jolteon',type:['electric']},{id:136,name:'Flareon',type:['fire']},{id:137,name:'Porygon',type:['normal']},{id:138,name:'Omanyte',type:['rock','water']},{id:139,name:'Omastar',type:['rock','water']},{id:140,name:'Kabuto',type:['rock','water']},{id:141,name:'Kabutops',type:['rock','water']},{id:142,name:'Aerodactyl',type:['rock','flying']},{id:143,name:'Snorlax',type:['normal']},{id:144,name:'Articuno',type:['ice','flying']},{id:145,name:'Zapdos',type:['electric','flying']},{id:146,name:'Moltres',type:['fire','flying']},{id:147,name:'Dratini',type:['dragon']},{id:148,name:'Dragonair',type:['dragon']},{id:149,name:'Dragonite',type:['dragon','flying']},{id:150,name:'Mewtwo',type:['psychic']},{id:151,name:'Mew',type:['psychic']},{id:152,name:'Chikorita',type:['grass']},{id:153,name:'Bayleef',type:['grass']},{id:154,name:'Meganium',type:['grass']},{id:155,name:'Cyndaquil',type:['fire']},{id:156,name:'Quilava',type:['fire']},{id:157,name:'Typhlosion',type:['fire']},{id:158,name:'Totodile',type:['water']},{id:159,name:'Croconaw',type:['water']},{id:160,name:'Feraligatr',type:['water']}
     ];
 
-    const pokemon = Array.from({ length: 1025 }, (_, index) => ({
-      id: index + 1,
-      name: pokemonNames[index] || `Pokémon ${index + 1}`
-    }));
+    const caughtSet = new Set(JSON.parse(localStorage.getItem('gigadex_caught_v5') || '[]'));
+    let activeStatus = 'all';
+    let activeGen = 'all';
+    let searchQuery = '';
+    let sortMode = 'number';
 
-    let currentSort = 'number';
-    let searchTerm = '';
-
-    const searchInput = document.getElementById('search');
-    const grid = document.getElementById('grid');
-
-    function getFilteredPokemon() {
-      let items = [...pokemon];
-
-      if (searchTerm.trim()) {
-        const query = searchTerm.trim().toLowerCase();
-        items = items.filter(p =>
-          p.name.toLowerCase().includes(query) || String(p.id).includes(query)
-        );
-      }
-
-      if (currentSort === 'alpha') {
-        items.sort((a, b) => a.name.localeCompare(b.name) || a.id - b.id);
-      } else {
-        items.sort((a, b) => a.id - b.id);
-      }
-
-      return items;
+    function getGen(id) {
+      if (id <= 151) return 1;
+      if (id <= 251) return 2;
+      if (id <= 386) return 3;
+      if (id <= 493) return 4;
+      if (id <= 649) return 5;
+      if (id <= 721) return 6;
+      if (id <= 809) return 7;
+      if (id <= 905) return 8;
+      return 9;
     }
 
-    function render() {
-      const items = getFilteredPokemon();
-      grid.innerHTML = items.map(p => `
-        <article class="card" aria-label="${p.name}">
-          <div class="dex-id">#${String(p.id).padStart(4, '0')}</div>
-          <img class="sprite" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${p.id}.png" alt="${p.name}" />
-          <p class="name">${p.name}</p>
-        </article>
-      `).join('');
+    function renderAppGrid() {
+      const grid = document.getElementById('pokemon-grid');
+      grid.innerHTML = '';
+
+      let filtered = allPokemon.filter((p) => {
+        const isCaught = caughtSet.has(p.id);
+        if (activeStatus === 'caught' && !isCaught) return false;
+        if (activeStatus === 'uncaught' && isCaught) return false;
+        if (activeGen !== 'all' && Number(activeGen) !== getGen(p.id)) return false;
+        if (searchQuery) {
+          const idText = '#' + String(p.id).padStart(4, '0');
+          const matchesName = p.name.toLowerCase().includes(searchQuery);
+          const matchesId = idText.includes(searchQuery) || String(p.id).includes(searchQuery);
+          if (!matchesName && !matchesId) return false;
+        }
+        return true;
+      });
+
+      filtered = filtered.sort((a, b) => {
+        if (sortMode === 'alphabetical') {
+          return a.name.localeCompare(b.name) || a.id - b.id;
+        }
+        return a.id - b.id;
+      });
+
+      const fragment = document.createDocumentFragment();
+      filtered.forEach((p) => {
+        const card = document.createElement('div');
+        const isCaught = caughtSet.has(p.id);
+        card.className = `poke-card ${isCaught ? 'caught' : ''}`;
+        const paddedId = '#' + String(p.id).padStart(4, '0');
+        const spriteUrl = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${p.id}.png`;
+
+        card.innerHTML = `
+          <span class="poke-dex-id">${paddedId}</span>
+          <div class="poke-img-wrap">
+            <img class="poke-img" src="${spriteUrl}" alt="${p.name}" loading="lazy" />
+          </div>
+          <div class="poke-name">${p.name}</div>
+        `;
+        card.onclick = () => openModal(p);
+        fragment.appendChild(card);
+      });
+
+      grid.appendChild(fragment);
     }
 
-    searchInput.addEventListener('input', (event) => {
-      searchTerm = event.target.value;
-      render();
+    function openModal(pokemon) {
+      document.getElementById('modal-dex-id').textContent = '#' + String(pokemon.id).padStart(4, '0');
+      document.getElementById('modal-generation').textContent = 'GEN ' + getGen(pokemon.id);
+      document.getElementById('modal-name').textContent = pokemon.name;
+      const img = document.getElementById('modal-img');
+      img.src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${pokemon.id}.png`;
+      document.getElementById('poke-modal').classList.add('active');
+    }
+
+    function closeModal() {
+      document.getElementById('poke-modal').classList.remove('active');
+    }
+
+    document.getElementById('app-search').addEventListener('input', (event) => {
+      searchQuery = event.target.value.toLowerCase().trim();
+      renderAppGrid();
     });
 
-    document.querySelectorAll('.sort-btn').forEach(button => {
-      button.addEventListener('click', () => {
-        currentSort = button.dataset.sort;
-        document.querySelectorAll('.sort-btn').forEach(btn => {
-          btn.classList.toggle('active', btn === button);
-        });
-        render();
+    document.querySelectorAll('.status-chip').forEach((chip) => {
+      chip.addEventListener('click', () => {
+        activeStatus = chip.dataset.status;
+        document.querySelectorAll('.status-chip').forEach((node) => node.classList.toggle('active', node === chip));
+        renderAppGrid();
       });
     });
 
-    render();
+    document.querySelectorAll('.gen-chip').forEach((chip) => {
+      chip.addEventListener('click', () => {
+        activeGen = chip.dataset.gen;
+        document.querySelectorAll('.gen-chip').forEach((node) => node.classList.toggle('active', node === chip));
+        renderAppGrid();
+      });
+    });
+
+    document.querySelectorAll('.sort-chip').forEach((chip) => {
+      chip.addEventListener('click', () => {
+        sortMode = chip.dataset.sort;
+        document.querySelectorAll('.sort-chip').forEach((node) => node.classList.toggle('active', node === chip));
+        renderAppGrid();
+      });
+    });
+
+    document.getElementById('poke-modal').addEventListener('click', (event) => {
+      if (event.target === event.currentTarget) closeModal();
+    });
+
+    renderAppGrid();
   </script>
 </body>
 </html>
