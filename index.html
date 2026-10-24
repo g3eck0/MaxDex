@@ -812,14 +812,17 @@
                     clearTimeout(longPressTimeout);
                     longPressTimeout = null;
                 };
-                card.addEventListener('pointerdown', event => {
+                const startLongPress = event => {
                     if (event.pointerType === 'mouse' && event.button !== 0) return;
+                    event.preventDefault();
                     longPressTriggered = false;
                     longPressTimeout = setTimeout(() => {
                         longPressTriggered = true;
                         markPokemonCaught(p.id, card);
                     }, 600);
-                });
+                };
+                card.addEventListener('touchstart', startLongPress, { passive: false });
+                card.addEventListener('pointerdown', startLongPress);
                 card.addEventListener('pointerup', cancelLongPress);
                 card.addEventListener('pointerleave', () => {
                     cancelLongPress();
