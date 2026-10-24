@@ -156,7 +156,7 @@
             background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px;
             padding: 8px 6px 7px; display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 0;
             position: relative; cursor: pointer; transition: border-color 0.15s, transform 0.15s;
-            touch-action: manipulation; user-select: none;
+            touch-action: manipulation; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
         }
         .poke-card:hover { transform: translateY(-2px); border-color: var(--accent-primary); }
         .poke-card.caught {
@@ -198,7 +198,7 @@
         .modal-card.catch-celebration .modal-portrait::before { animation-name: caught-sprite-twinkle; }
         .poke-card.catch-celebration .poke-img-wrap::after,
         .modal-card.catch-celebration .modal-portrait::after { animation-name: caught-sprite-sparkle; }
-        .poke-img { width: 100%; height: 100%; object-fit: contain; }
+        .poke-img { width: 100%; height: 100%; object-fit: contain; -webkit-user-drag: none; -webkit-touch-callout: none; }
         .poke-name {
             font-size: clamp(0.68rem, 2.5vw, 0.78rem); font-weight: 700; text-align: center;
             white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; line-height: 1.2;
@@ -303,19 +303,39 @@
             0%, 100% { box-shadow: 0 0 0 rgba(16,185,129,0); }
             38%, 68% { box-shadow: 0 0 20px rgba(16,185,129,0.7); }
         }
+        @keyframes caught-card-glow-reduced {
+            0%, 100% { box-shadow: 0 0 0 3px var(--caught-glow); }
+            50% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0.45), 0 0 18px rgba(16, 185, 129, 0.65); }
+        }
+        @keyframes caught-check-fade-reduced {
+            0%, 100% { opacity: 0.65; }
+            50% { opacity: 1; }
+        }
+        @keyframes caught-sprite-glow-reduced {
+            0%, 100% { filter: drop-shadow(0 0 4px rgba(16, 185, 129, 0.45)); }
+            50% { filter: drop-shadow(0 0 12px rgba(253, 224, 71, 0.8)) drop-shadow(0 0 18px rgba(16, 185, 129, 0.65)); }
+        }
+        @keyframes caught-modal-glow-reduced {
+            0%, 100% { box-shadow: 0 24px 70px rgba(0,0,0,0.65); }
+            50% { box-shadow: 0 0 28px rgba(16,185,129,0.55), 0 24px 70px rgba(0,0,0,0.65); }
+        }
+        @keyframes caught-button-flash-reduced {
+            0%, 100% { box-shadow: 0 0 0 rgba(16,185,129,0); }
+            50% { box-shadow: 0 0 16px rgba(16,185,129,0.6); }
+        }
         @media (prefers-reduced-motion: reduce) {
-            .poke-card.catch-celebration,
-            .poke-card.catch-celebration::after,
+            .poke-card.catch-celebration { animation: caught-card-glow-reduced 700ms ease-in-out 2; }
+            .poke-card.catch-celebration::after { animation: caught-check-fade-reduced 700ms ease-in-out 2; }
             .poke-card.catch-celebration .poke-img,
-            .modal-card.catch-celebration { animation: none; }
+            .modal-card.catch-celebration .modal-img { animation: caught-sprite-glow-reduced 700ms ease-in-out 2; }
+            .modal-card.catch-celebration { animation: caught-modal-glow-reduced 700ms ease-in-out 2; }
             .poke-card.catch-celebration .poke-img-wrap::before,
             .poke-card.catch-celebration .poke-img-wrap::after,
             .modal-card.catch-celebration .modal-portrait::before,
             .modal-card.catch-celebration .modal-portrait::after {
                 animation: caught-sprite-twinkle-reduced 700ms ease-in-out 2;
             }
-            .modal-card.catch-celebration .modal-img,
-            .modal-card.catch-celebration .toggle-btn { animation: none; }
+            .modal-card.catch-celebration .toggle-btn { animation: caught-button-flash-reduced 700ms ease-in-out 2; }
             .poke-card.catch-celebration {
                 outline: 3px solid var(--caught-green);
                 box-shadow: 0 0 0 6px var(--caught-glow), 0 0 24px rgba(16, 185, 129, 0.7);
@@ -773,7 +793,7 @@
 
                 card.innerHTML = `
                     <div class="poke-img-wrap">
-                        <img class="poke-img" src="${spriteUrl}" alt="${p.name}" loading="lazy" onerror="this.onerror=null; this.src='https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${p.id}.png'">
+                        <img class="poke-img" src="${spriteUrl}" alt="${p.name}" loading="lazy" draggable="false" onerror="this.onerror=null; this.src='https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${p.id}.png'">
                     </div>
                     <span class="poke-name">${p.name}</span>
                     <div class="poke-card-meta">
