@@ -823,11 +823,9 @@
                 card.addEventListener('pointerup', cancelLongPress);
                 card.addEventListener('pointerleave', () => {
                     cancelLongPress();
-                    longPressTriggered = false;
                 });
                 card.addEventListener('pointercancel', () => {
                     cancelLongPress();
-                    longPressTriggered = false;
                 });
                 card.addEventListener('contextmenu', event => event.preventDefault());
                 card.onclick = () => {
