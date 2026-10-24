@@ -168,7 +168,36 @@
             background: var(--caught-green); color: white; border-radius: 50%; font-size: 0.55rem; font-weight: bold;
             display: flex; align-items: center; justify-content: center;
         }
-        .poke-img-wrap { width: 100%; aspect-ratio: 1 / 1; display: flex; align-items: center; justify-content: center; }
+        .poke-card.catch-celebration { z-index: 1; animation: caught-card-pop 800ms cubic-bezier(0.2, 0.8, 0.2, 1); }
+        .poke-card.catch-celebration::after { animation: caught-check-pop 600ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+        .poke-card.catch-celebration .poke-img { animation: caught-sprite-shimmer 900ms ease-in-out both; }
+        .poke-img-wrap { width: 100%; aspect-ratio: 1 / 1; display: flex; align-items: center; justify-content: center; position: relative; }
+        .poke-card.catch-celebration .poke-img-wrap::before,
+        .poke-card.catch-celebration .poke-img-wrap::after,
+        .modal-card.catch-celebration .modal-portrait::before,
+        .modal-card.catch-celebration .modal-portrait::after {
+            position: absolute; z-index: 1; color: #fde68a; pointer-events: none;
+            text-shadow: 0 0 6px #fef3c7, 0 0 14px rgba(250, 204, 21, 0.9);
+            animation: caught-sprite-sparkle 1500ms ease-in-out both;
+        }
+        .poke-card.catch-celebration .poke-img-wrap::before,
+        .modal-card.catch-celebration .modal-portrait::before {
+            content: '✦'; top: 18%; left: 14%; font-size: 1rem; animation-delay: 80ms;
+        }
+        .poke-card.catch-celebration .poke-img-wrap::after,
+        .modal-card.catch-celebration .modal-portrait::after {
+            content: '✦  ✨  ✦'; top: 12%; left: 0; right: 0;
+            font-size: clamp(0.8rem, 3vw, 1.2rem); text-align: center;
+        }
+        .poke-card.catch-celebration .poke-img-wrap::after { top: 12%; }
+        .poke-card.catch-celebration .poke-img-wrap::before { font-size: 0.85rem; }
+        .modal-card.catch-celebration .modal-portrait::before { font-size: 1.3rem; }
+        .poke-card.catch-celebration .poke-img-wrap,
+        .modal-card.catch-celebration .modal-portrait { isolation: isolate; }
+        .poke-card.catch-celebration .poke-img-wrap::before,
+        .modal-card.catch-celebration .modal-portrait::before { animation-name: caught-sprite-twinkle; }
+        .poke-card.catch-celebration .poke-img-wrap::after,
+        .modal-card.catch-celebration .modal-portrait::after { animation-name: caught-sprite-sparkle; }
         .poke-img { width: 100%; height: 100%; object-fit: contain; }
         .poke-name {
             font-size: clamp(0.68rem, 2.5vw, 0.78rem); font-weight: 700; text-align: center;
@@ -207,7 +236,7 @@
         .modal-types { min-height: 38px; display: flex; flex-wrap: wrap; justify-content: flex-start; gap: 8px; }
         .modal-types .type-badge { flex-basis: 49px; width: 49px; height: 36px; border-radius: 6px; }
         .modal-types .type-icon { width: 164px; height: 36px; }
-        .modal-portrait { width: 100%; aspect-ratio: 1; display: grid; place-items: center; overflow: hidden; }
+        .modal-portrait { width: 100%; aspect-ratio: 1; display: grid; place-items: center; overflow: hidden; position: relative; }
         .modal-img { width: 100%; height: 100%; object-fit: contain; }
         .pokedex-details { border-top: 1px solid #334155; margin-top: 18px; padding-top: 16px; }
         .pokedex-section-label { color: #cbd5e1; font-size: 0.7rem; font-weight: 800; letter-spacing: 0.1em; margin: 4px 0 8px; }
@@ -219,6 +248,44 @@
         .toggle-btn.active, .toggle-btn.active:hover { background: #047857; border-color: #047857; color: white; }
         .modal-card.catch-celebration .modal-img { animation: caught-sprite-pop 650ms cubic-bezier(0.2, 0.8, 0.2, 1); }
         .modal-card.catch-celebration .toggle-btn { animation: caught-button-flash 650ms ease-out; }
+        .modal-card.catch-celebration { animation: caught-modal-glow 700ms ease-out; }
+        @keyframes caught-card-pop {
+            0% { transform: scale(1); }
+            32% { transform: scale(1.14) rotate(-4deg); }
+            58% { transform: scale(0.96) rotate(3deg); }
+            78% { transform: scale(1.04) rotate(-1deg); }
+            100% { transform: scale(1) rotate(0); }
+        }
+        @keyframes caught-sprite-sparkle {
+            0% { opacity: 0; transform: scale(0.35) rotate(-25deg); }
+            18% { opacity: 1; transform: scale(1.35) rotate(18deg); }
+            42% { opacity: 0.35; transform: scale(0.75) rotate(-12deg); }
+            66% { opacity: 1; transform: scale(1.2) rotate(15deg); }
+            84% { opacity: 0.55; transform: scale(0.9) rotate(-8deg); }
+            100% { opacity: 0; transform: scale(0.5) rotate(20deg); }
+        }
+        @keyframes caught-sprite-twinkle {
+            0%, 100% { opacity: 0; transform: scale(0.4) rotate(0); }
+            25%, 75% { opacity: 1; transform: scale(1.2) rotate(35deg); }
+            50% { opacity: 0.35; transform: scale(0.7) rotate(70deg); }
+        }
+        @keyframes caught-sprite-twinkle-reduced {
+            0%, 100% { opacity: 0.45; filter: brightness(1); }
+            50% { opacity: 1; filter: brightness(1.7); }
+        }
+        @keyframes caught-sprite-shimmer {
+            0%, 100% { filter: drop-shadow(0 0 0 rgba(253, 224, 71, 0)); }
+            35%, 70% { filter: drop-shadow(0 0 9px rgba(253, 224, 71, 0.95)) drop-shadow(0 0 18px rgba(16, 185, 129, 0.55)); }
+        }
+        @keyframes caught-check-pop {
+            0% { transform: scale(0) rotate(-45deg); }
+            60% { transform: scale(1.35) rotate(12deg); }
+            100% { transform: scale(1) rotate(0); }
+        }
+        @keyframes caught-modal-glow {
+            0%, 100% { box-shadow: 0 24px 70px rgba(0,0,0,0.65); }
+            40% { box-shadow: 0 0 34px rgba(16,185,129,0.65), 0 24px 70px rgba(0,0,0,0.65); }
+        }
         @keyframes caught-sprite-pop {
             0% { transform: scale(1); }
             38% { transform: scale(1.18) rotate(-5deg); }
@@ -230,8 +297,32 @@
             38%, 68% { box-shadow: 0 0 20px rgba(16,185,129,0.7); }
         }
         @media (prefers-reduced-motion: reduce) {
+            .poke-card.catch-celebration,
+            .poke-card.catch-celebration::after,
+            .poke-card.catch-celebration .poke-img,
+            .modal-card.catch-celebration { animation: none; }
+            .poke-card.catch-celebration .poke-img-wrap::before,
+            .poke-card.catch-celebration .poke-img-wrap::after,
+            .modal-card.catch-celebration .modal-portrait::before,
+            .modal-card.catch-celebration .modal-portrait::after {
+                animation: caught-sprite-twinkle-reduced 700ms ease-in-out 2;
+            }
             .modal-card.catch-celebration .modal-img,
             .modal-card.catch-celebration .toggle-btn { animation: none; }
+            .poke-card.catch-celebration {
+                outline: 3px solid var(--caught-green);
+                box-shadow: 0 0 0 6px var(--caught-glow), 0 0 24px rgba(16, 185, 129, 0.7);
+            }
+            .poke-card.catch-celebration .poke-img {
+                filter: drop-shadow(0 0 9px rgba(253, 224, 71, 0.95)) drop-shadow(0 0 18px rgba(16, 185, 129, 0.55));
+            }
+            .modal-card.catch-celebration {
+                border-color: var(--caught-green);
+                box-shadow: 0 0 34px rgba(16, 185, 129, 0.65), 0 24px 70px rgba(0,0,0,0.65);
+            }
+            .modal-card.catch-celebration .modal-img { filter: drop-shadow(0 0 14px rgba(16, 185, 129, 0.8)); }
+            .modal-card.catch-celebration .modal-portrait::after { opacity: 1; }
+            .modal-card.catch-celebration .toggle-btn { box-shadow: 0 0 20px rgba(16,185,129,0.7); }
         }
         
         .modal-label { font-size: 0.75rem; font-weight: 700; color: #cbd5e1; display: block; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -491,7 +582,7 @@
             bug: 7, ghost: 8, steel: 9, fire: 10, water: 11, grass: 12,
             electric: 13, psychic: 14, ice: 15, dragon: 16, dark: 17, fairy: 18
         };
-        let activeStatus = 'all', activeGen = 'all', activeType = 'all', activeSort = 'number', searchQuery = '', currentModalId = null, catchAnimationTimeout = null, catchAudioContext = null;
+        let activeStatus = 'all', activeGen = 'all', activeType = 'all', activeSort = 'number', searchQuery = '', currentModalId = null, catchAnimationTimeout = null, catchCardAnimationTimeout = null, catchAudioContext = null;
 
         const STORAGE_KEYS = {
             caught: 'maxdex_caught_v5',
@@ -744,6 +835,14 @@
             caughtSet.add(pokemonId);
             localStorage.setItem(STORAGE_KEYS.caught, JSON.stringify(Array.from(caughtSet)));
             card.classList.add('caught');
+            card.classList.remove('catch-celebration');
+            void card.offsetWidth;
+            card.classList.add('catch-celebration');
+            clearTimeout(catchCardAnimationTimeout);
+            catchCardAnimationTimeout = setTimeout(() => {
+                card.classList.remove('catch-celebration');
+                catchCardAnimationTimeout = null;
+            }, 1700);
             card.setAttribute('aria-pressed', 'true');
             updateDashboard();
             if (typeof navigator.vibrate === 'function') navigator.vibrate(35);
@@ -1084,7 +1183,7 @@
                 catchAnimationTimeout = setTimeout(() => {
                     modal.classList.remove('catch-celebration');
                     catchAnimationTimeout = null;
-                }, 700);
+                }, 1700);
             }
             pushCloudSync().catch(reportSyncError);
         }
