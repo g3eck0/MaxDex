@@ -644,7 +644,7 @@
         let pokemonCardAvailability = null;
         let pokemonCardAvailabilityPromise = null;
         let syncRoomId = '';
-        let syncInterval = null;
+        let syncChannel = null;
         let currentUser = null;
         let authorizedRooms = [];
 
@@ -812,17 +812,14 @@
                     clearTimeout(longPressTimeout);
                     longPressTimeout = null;
                 };
-                const startLongPress = event => {
+                card.addEventListener('pointerdown', event => {
                     if (event.pointerType === 'mouse' && event.button !== 0) return;
-                    event.preventDefault();
                     longPressTriggered = false;
                     longPressTimeout = setTimeout(() => {
                         longPressTriggered = true;
                         markPokemonCaught(p.id, card);
                     }, 600);
-                };
-                card.addEventListener('touchstart', startLongPress, { passive: false });
-                card.addEventListener('pointerdown', startLongPress);
+                });
                 card.addEventListener('pointerup', cancelLongPress);
                 card.addEventListener('pointerleave', () => {
                     cancelLongPress();
@@ -858,6 +855,17 @@
             document.getElementById('stat-caught').innerText = caught;
             document.getElementById('stat-remaining').innerText = rem;
             document.getElementById('stat-pct').innerText = pct;
+        }
+
+        function areSetsEqual(first, second) {
+            return first.size === second.size && Array.from(first).every(value => second.has(value));
+        }
+
+        function areRecordsEqual(first, second) {
+            const firstKeys = Object.keys(first);
+            const secondKeys = Object.keys(second);
+            return firstKeys.length === secondKeys.length
+                && firstKeys.every(key => Object.prototype.hasOwnProperty.call(second, key) && first[key] === second[key]);
         }
 
         function markPokemonCaught(pokemonId, card) {
@@ -1314,8 +1322,7 @@
             }
 
             const previousRoom = syncRoomId;
-            if (syncInterval) clearInterval(syncInterval);
-            syncInterval = null;
+            stopLiveSync();
             syncRoomId = room;
             try {
                 await pullCloudSync();
@@ -1412,17 +1419,51 @@
         }
 
         function startLiveSync() {
+            stopLiveSync();
+            if (!syncRoomId || !currentUser) return;
+
             const btn = document.getElementById('sync-status-btn');
-            btn.classList.add('sync-active');
-            btn.innerText = '🟢 Live Sync ON';
-            if (syncInterval) clearInterval(syncInterval);
-            syncInterval = setInterval(() => pullCloudSync().catch(reportSyncError), 5000);
+            const roomId = syncRoomId;
+            const channel = supabaseClient
+                .channel(`room-sync:${roomId}`)
+                .on('postgres_changes', {
+                    event: 'UPDATE',
+                    schema: 'public',
+                    table: SUPABASE_TABLE,
+                    filter: `room_id=eq.${roomId}`
+                }, () => {
+                    if (syncChannel !== channel) return;
+                    pullCloudSync().catch(error => {
+                        if (syncChannel === channel) reportSyncError(error);
+                    });
+                })
+                .subscribe((status, error) => {
+                    if (syncChannel !== channel) return;
+                    if (status === 'SUBSCRIBED') {
+                        btn.classList.add('sync-active');
+                        btn.innerText = '🟢 Live Sync ON';
+                    } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+                        console.error('Supabase Realtime subscription failed', error || status);
+                        btn.classList.remove('sync-active');
+                        btn.innerText = '⚠ Live Updates Unavailable';
+                    }
+                });
+            syncChannel = channel;
+        }
+
+        function stopLiveSync() {
+            const channel = syncChannel;
+            syncChannel = null;
+            if (channel) {
+                supabaseClient.removeChannel(channel).catch(error => {
+                    console.error('Could not stop the Supabase Realtime subscription', error);
+                });
+            }
         }
 
         function reportSyncError(error) {
             console.error('Supabase sync failed', error);
-            if (syncInterval) clearInterval(syncInterval);
-            syncInterval = null;
+            stopLiveSync();
             const btn = document.getElementById('sync-status-btn');
             btn.classList.remove('sync-active');
             btn.innerText = '⚠ Sync Error';
@@ -1431,6 +1472,7 @@
 
         async function pushCloudSync() {
             if (!syncRoomId || !currentUser) return;
+            const roomId = syncRoomId;
             const caughtIds = new Set(Array.from(caughtSet, String));
             const caughtVariants = Object.fromEntries(
                 Object.entries(pokemonVariants).filter(([pokemonId, value]) => caughtIds.has(pokemonId) && value)
@@ -1442,7 +1484,7 @@
             const { data, error } = await supabaseClient
                 .from(SUPABASE_TABLE)
                 .update(payload)
-                .eq('room_id', syncRoomId)
+                .eq('room_id', roomId)
                 .select('room_id');
             if (error) throw error;
             if (!data.length) throw new Error('You are no longer invited to this room.');
@@ -1450,24 +1492,34 @@
 
         async function pullCloudSync() {
             if (!syncRoomId || !currentUser) return;
+            const roomId = syncRoomId;
             const { data, error } = await supabaseClient
                 .from(SUPABASE_TABLE)
                 .select('caught,variants')
-                .eq('room_id', syncRoomId)
+                .eq('room_id', roomId)
                 .maybeSingle();
             if (error) throw error;
+            if (syncRoomId !== roomId) return;
             if (!data) throw new Error('The selected room is unavailable or you are not invited.');
             if (!Array.isArray(data.caught) || !data.variants || typeof data.variants !== 'object' || Array.isArray(data.variants)) {
                 throw new Error('The Supabase room data has an unexpected format.');
             }
 
-            caughtSet = new Set(data.caught);
-            pokemonVariants = { ...data.variants };
-            pokemonCardSubtypes = pokemonVariants[CARD_SUBTYPES_SYNC_KEY] || {};
-            delete pokemonVariants[CARD_SUBTYPES_SYNC_KEY];
-            if (!pokemonCardSubtypes || typeof pokemonCardSubtypes !== 'object' || Array.isArray(pokemonCardSubtypes)) {
+            const nextCaughtSet = new Set(data.caught);
+            const nextVariants = { ...data.variants };
+            const nextCardSubtypes = nextVariants[CARD_SUBTYPES_SYNC_KEY] || {};
+            delete nextVariants[CARD_SUBTYPES_SYNC_KEY];
+            if (!nextCardSubtypes || typeof nextCardSubtypes !== 'object' || Array.isArray(nextCardSubtypes)) {
                 throw new Error('The Supabase room card subtype data has an unexpected format.');
             }
+            const caughtChanged = !areSetsEqual(caughtSet, nextCaughtSet);
+            const variantsChanged = !areRecordsEqual(pokemonVariants, nextVariants);
+            const subtypesChanged = !areRecordsEqual(pokemonCardSubtypes, nextCardSubtypes);
+            if (!caughtChanged && !variantsChanged && !subtypesChanged) return;
+
+            caughtSet = nextCaughtSet;
+            pokemonVariants = nextVariants;
+            pokemonCardSubtypes = nextCardSubtypes;
             localStorage.setItem(STORAGE_KEYS.caught, JSON.stringify(Array.from(caughtSet)));
             localStorage.setItem(STORAGE_KEYS.variants, JSON.stringify(pokemonVariants));
             localStorage.setItem(STORAGE_KEYS.cardSubtypes, JSON.stringify(pokemonCardSubtypes));
@@ -1475,7 +1527,7 @@
                 updateModalCaughtUI(caughtSet.has(currentModalId));
                 await fetchPokemonCardAvailability(currentModalId);
             }
-            renderAppGrid();
+            if (caughtChanged) renderAppGrid();
         }
 
         function exportSaveData() {
@@ -1523,8 +1575,7 @@
                 inviteForm.hidden = true;
                 syncRoomId = '';
                 authorizedRooms = [];
-                if (syncInterval) clearInterval(syncInterval);
-                syncInterval = null;
+                stopLiveSync();
                 document.getElementById('sync-status-btn').classList.remove('sync-active');
                 document.getElementById('sync-status-btn').innerText = '📡 Live Sync';
                 document.getElementById('sync-issue-overlay').classList.remove('active');

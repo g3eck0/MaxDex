@@ -46,6 +46,8 @@ In the Supabase dashboard open **SQL Editor**, paste the contents of [`supabase/
 
 This creates the `gigadex_rooms` table, an auto-update trigger, and Row Level Security policies.
 
+For instant shared updates, enable `public.gigadex_rooms` in the `supabase_realtime` publication from **Database → Publications** in the Supabase dashboard. The app listens for room changes and no longer polls the database on a timer.
+
 ### 4. Configure the app
 
 Open `index.html` and update the two constants near the top of the `<script>` block:
