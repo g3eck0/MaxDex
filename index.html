@@ -855,7 +855,7 @@
                 variantSelect.value = caughtSet.has(pokemonId) && availableRarities.includes(pokemonVariants[pokemonId])
                     ? pokemonVariants[pokemonId]
                     : '';
-                variantSelect.disabled = !caughtSet.has(pokemonId);
+                variantSelect.disabled = false;
             }
 
             const availableSubtypes = Array.isArray(entry.subtypes) ? entry.subtypes : [];
@@ -870,7 +870,7 @@
                 subtypeSelect.value = caughtSet.has(pokemonId) && availableSubtypes.includes(pokemonCardSubtypes[pokemonId])
                     ? pokemonCardSubtypes[pokemonId]
                     : '';
-                subtypeSelect.disabled = !caughtSet.has(pokemonId);
+                subtypeSelect.disabled = false;
             }
             subtypeSelect.addEventListener('change', saveModalCardSubtype);
             container.appendChild(subtypeSelect);
@@ -1060,6 +1060,16 @@
                 delete pokemonCardSubtypes[currentModalId];
                 localStorage.setItem(STORAGE_KEYS.variants, JSON.stringify(pokemonVariants));
                 localStorage.setItem(STORAGE_KEYS.cardSubtypes, JSON.stringify(pokemonCardSubtypes));
+                document.getElementById('modal-variant').value = '';
+                const subtypeSelect = document.querySelector('#card-availability-container select');
+                if (subtypeSelect) subtypeSelect.value = '';
+            } else {
+                const rarity = document.getElementById('modal-variant').value;
+                const subtypeSelect = document.querySelector('#card-availability-container select');
+                if (rarity) pokemonVariants[currentModalId] = rarity;
+                if (subtypeSelect?.value) pokemonCardSubtypes[currentModalId] = subtypeSelect.value;
+                localStorage.setItem(STORAGE_KEYS.variants, JSON.stringify(pokemonVariants));
+                localStorage.setItem(STORAGE_KEYS.cardSubtypes, JSON.stringify(pokemonCardSubtypes));
             }
             localStorage.setItem(STORAGE_KEYS.caught, JSON.stringify(Array.from(caughtSet)));
             updateModalCaughtUI(caughtSet.has(currentModalId));
@@ -1085,9 +1095,9 @@
             document.getElementById('modal-caught-icon').innerText = isCaught ? '✓' : '☐';
             document.getElementById('modal-caught-text').innerText = isCaught ? 'Caught' : 'Mark Caught';
             const raritySelect = document.getElementById('modal-variant');
-            raritySelect.disabled = !isCaught || raritySelect.options.length <= 1;
+            raritySelect.disabled = raritySelect.options.length <= 1;
             const subtypeSelect = document.querySelector('#card-availability-container select');
-            if (subtypeSelect) subtypeSelect.disabled = !isCaught || subtypeSelect.options.length <= 1;
+            if (subtypeSelect) subtypeSelect.disabled = subtypeSelect.options.length <= 1;
         }
 
         function saveModalVariant() {
