@@ -139,40 +139,49 @@
         .type-filter-chip.active { border: 2px solid #f8fafc; box-shadow: 0 0 0 2px var(--accent-primary); }
         .type-filter-chip:focus-visible { outline: 2px solid var(--accent-primary); outline-offset: 2px; }
 
-        /* RESPONSIVE GRID (Min 3 per row mobile) */
+        /* RESPONSIVE GRID */
         .pokemon-grid {
             display: grid;
             grid-template-columns: repeat(3, minmax(0, 1fr));
             gap: 8px;
         }
+        @media (min-width: 480px) {
+            .pokemon-grid { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; }
+        }
         @media (min-width: 640px) {
-            .pokemon-grid { grid-template-columns: repeat(auto-fill, 160px); justify-content: center; gap: 14px; }
+            .pokemon-grid { grid-template-columns: repeat(auto-fill, minmax(125px, 1fr)); gap: 12px; }
         }
 
         .poke-card {
             background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px;
-            height: 90px; padding: 6px; display: grid; grid-template-rows: auto auto auto; align-content: center; gap: 2px; min-width: 0;
-            position: relative; cursor: pointer; transition: 0.2s; touch-action: manipulation; user-select: none;
+            padding: 8px 6px 7px; display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 0;
+            position: relative; cursor: pointer; transition: border-color 0.15s, transform 0.15s;
+            touch-action: manipulation; user-select: none;
         }
-        .poke-card:hover { transform: translateY(-3px); border-color: var(--accent-primary); }
-        .poke-card.caught { border-color: rgba(16, 185, 129, 0.5); background: linear-gradient(180deg, rgba(16, 185, 129, 0.08) 0%, var(--bg-card) 100%); }
+        .poke-card:hover { transform: translateY(-2px); border-color: var(--accent-primary); }
+        .poke-card.caught {
+            border-color: rgba(16, 185, 129, 0.5);
+            background: linear-gradient(180deg, rgba(16, 185, 129, 0.10) 0%, var(--bg-card) 100%);
+        }
         .poke-card.caught::after {
-            content: '✓'; position: absolute; bottom: 4px; right: 4px; width: 14px; height: 14px;
+            content: '✓'; position: absolute; top: 6px; right: 6px; width: 14px; height: 14px;
             background: var(--caught-green); color: white; border-radius: 50%; font-size: 0.55rem; font-weight: bold;
             display: flex; align-items: center; justify-content: center;
         }
-        .poke-dex-id { position: relative; z-index: 2; justify-self: start; font-size: 0.72rem; font-weight: 700; color: var(--text-primary); }
-        .poke-card-body { display: grid; grid-template-columns: minmax(0, 1fr) 22px; align-items: center; justify-items: center; min-width: 0; min-height: 0; }
-        .poke-img-wrap { width: min(100%, 40px); height: 40px; display: flex; align-items: center; justify-content: center; }
-        .poke-img { width: 40px; height: 40px; object-fit: contain; image-rendering: pixelated; }
-        .poke-card-footer { position: relative; z-index: 1; display: flex; align-items: baseline; justify-content: center; min-width: 0; padding-right: 12px; }
-        .poke-name { min-width: 0; font-size: 0.72rem; font-weight: 700; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .poke-types { justify-self: end; display: flex; flex-direction: column; align-items: flex-end; justify-content: center; gap: 2px; }
-        .type-badge {
-            display: inline-flex; align-items: center; justify-content: flex-start; flex: 0 0 18px;
-            width: 18px; height: 13px; overflow: hidden; border-radius: 3px;
+        .poke-img-wrap { width: 100%; aspect-ratio: 1 / 1; display: flex; align-items: center; justify-content: center; }
+        .poke-img { width: 100%; height: 100%; object-fit: contain; }
+        .poke-name {
+            font-size: clamp(0.68rem, 2.5vw, 0.78rem); font-weight: 700; text-align: center;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; line-height: 1.2;
         }
-        .type-icon { flex: 0 0 auto; width: 59px; height: 13px; max-width: none; }
+        .poke-card-meta { display: flex; align-items: center; justify-content: center; gap: 5px; width: 100%; min-width: 0; }
+        .poke-dex-id { font-size: 0.64rem; font-weight: 600; color: var(--text-muted); line-height: 1; }
+        .poke-types { display: inline-flex; align-items: center; gap: 3px; }
+        .type-badge {
+            display: inline-flex; align-items: center; justify-content: flex-start; flex: 0 0 14px;
+            width: 14px; height: 12px; overflow: hidden; border-radius: 3px;
+        }
+        .type-icon { flex: 0 0 auto; width: 55px; height: 12px; max-width: none; }
 
         /* MODAL */
         .modal-overlay {
@@ -227,6 +236,16 @@
         
         .modal-label { font-size: 0.75rem; font-weight: 700; color: #cbd5e1; display: block; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .modal-select { width: 100%; background: #0b0f19; border: 1px solid #475569; border-radius: 8px; padding: 11px; color: #f1f5f9; font-size: 0.9rem; outline: none; margin-bottom: 14px; }
+
+        .card-availability-box {
+            margin-bottom: 14px;
+        }
+        .availability-summary { color: #94a3b8; font-size: 0.74rem; margin-bottom: 8px; }
+        .availability-group { margin-top: 8px; }
+        .availability-group:first-child { margin-top: 0; }
+        .availability-group-label { color: #94a3b8; font-size: 0.68rem; font-weight: 700; margin-bottom: 5px; }
+        .availability-values { display: flex; flex-wrap: wrap; gap: 5px; }
+        .availability-value { background: #202b3b; border: 1px solid #334155; border-radius: 999px; color: #e2e8f0; font-size: 0.68rem; padding: 3px 7px; }
 
         .tcg-sets-box {
             background: #0b0f19; border: 1px solid #334155; border-radius: 8px; padding: 10px; max-height: 140px; overflow-y: auto; margin-bottom: 4px;
@@ -390,16 +409,15 @@
                     <span id="modal-caught-text">Mark Caught</span>
                 </button>
 
-                <label class="modal-label" for="modal-variant">CARD FINISH / VARIANT</label>
+                <label class="modal-label" for="modal-variant">AVAILABLE CARD RARITIES</label>
                 <select id="modal-variant" class="modal-select" onchange="saveModalVariant()">
-                    <option value="Standard">Standard</option>
-                    <option value="Holo">Holo</option>
-                    <option value="Reverse Holo">Reverse Holo</option>
-                    <option value="Full Art">Full Art</option>
-                    <option value="Illustration Rare">Illustration Rare</option>
-                    <option value="Secret Rare">Secret Rare</option>
-                    <option value="Promo">Promo</option>
+                    <option value="">Loading available rarities...</option>
                 </select>
+
+                <div class="pokedex-section-label">CARD OPTIONS</div>
+                <div class="card-availability-box" id="card-availability-container" role="status" aria-live="polite">
+                    <div class="loading-sets">Loading card availability...</div>
+                </div>
 
                 <div class="pokedex-section-label">KNOWN CARD SETS</div>
                 <div class="tcg-sets-box" id="tcg-sets-container">
@@ -478,9 +496,11 @@
         const STORAGE_KEYS = {
             caught: 'maxdex_caught_v5',
             variants: 'maxdex_variants_v5',
+            cardSubtypes: 'maxdex_card_subtypes_v1',
             syncRoom: 'maxdex_sync_room',
             sortOrder: 'maxdex_sort_order'
         };
+        const CARD_SUBTYPES_SYNC_KEY = '__cardSubtypes';
 
         function getMigratedStorageValue(key, legacyKey, fallbackValue) {
             const currentValue = localStorage.getItem(key);
@@ -499,9 +519,12 @@
 
         let caughtSet = new Set(JSON.parse(getMigratedStorageValue(STORAGE_KEYS.caught, 'gigadex_caught_v5', '[]')));
         let pokemonVariants = JSON.parse(getMigratedStorageValue(STORAGE_KEYS.variants, 'gigadex_variants_v5', '{}'));
+        let pokemonCardSubtypes = JSON.parse(localStorage.getItem(STORAGE_KEYS.cardSubtypes) || '{}');
         let setCache = {};
         let tcgCatalog = null;
         let tcgSetById = new Map();
+        let pokemonCardAvailability = null;
+        let pokemonCardAvailabilityPromise = null;
         let syncRoomId = '';
         let syncInterval = null;
         let currentUser = null;
@@ -648,18 +671,16 @@
                 const card = document.createElement('div');
                 card.className = `poke-card ${isCaught ? 'caught' : ''}`;
                 const paddedId = '#' + String(p.id).padStart(4, '0');
-                const spriteUrl = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${p.id}.png`;
+                const spriteUrl = `sprites/${p.id}.png`;
 
                 card.innerHTML = `
-                    <span class="poke-dex-id">${paddedId}</span>
-                    <div class="poke-card-body">
-                        <div class="poke-img-wrap">
-                            <img class="poke-img" src="${spriteUrl}" alt="${p.name}" loading="lazy" onerror="this.src='https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/0.png'">
-                        </div>
-                        <div class="poke-types" aria-label="${p.name} types"></div>
+                    <div class="poke-img-wrap">
+                        <img class="poke-img" src="${spriteUrl}" alt="${p.name}" loading="lazy" onerror="this.onerror=null; this.src='https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${p.id}.png'">
                     </div>
-                    <div class="poke-card-footer">
-                        <span class="poke-name">${p.name}</span>
+                    <span class="poke-name">${p.name}</span>
+                    <div class="poke-card-meta">
+                        <span class="poke-dex-id">${paddedId}</span>
+                        <div class="poke-types" aria-label="${p.name} types"></div>
                     </div>
                 `;
                 renderPokemonTypes(p.id, card.querySelector('.poke-types'));
@@ -738,16 +759,126 @@
             const modalImage = document.getElementById('modal-img');
             modalImage.onerror = () => {
                 modalImage.onerror = null;
-                modalImage.src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${p.id}.png`;
+                modalImage.src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${p.id}.png`;
             };
-            modalImage.src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${p.id}.png`;
+            modalImage.src = `sprites/${p.id}.png`;
             renderPokemonTypes(p.id, document.getElementById('modal-types'));
 
             updateModalCaughtUI(caughtSet.has(p.id));
-            document.getElementById('modal-variant').value = pokemonVariants[p.id] || 'Standard';
             document.getElementById('poke-modal').classList.add('active');
 
-            await fetchTcgSetsForPokemon(p.name, p.id);
+            await Promise.all([
+                fetchTcgSetsForPokemon(p.name, p.id),
+                fetchPokemonCardAvailability(p.id)
+            ]);
+        }
+
+        async function loadPokemonCardAvailability() {
+            if (pokemonCardAvailability) return pokemonCardAvailability;
+            if (pokemonCardAvailabilityPromise) return pokemonCardAvailabilityPromise;
+
+            pokemonCardAvailabilityPromise = (async () => {
+                const availabilityUrl = new URL('pokemon-card-availability.json', document.baseURI);
+                const response = await fetch(availabilityUrl);
+                if (!response.ok) throw new Error(`Card availability request failed (HTTP ${response.status}).`);
+
+                const data = await response.json();
+                if (data?.schemaVersion !== 1 || !data.pokemon || typeof data.pokemon !== 'object') {
+                    throw new Error('The card availability file has an invalid format.');
+                }
+
+                pokemonCardAvailability = data;
+                return data;
+            })();
+
+            try {
+                return await pokemonCardAvailabilityPromise;
+            } catch (error) {
+                pokemonCardAvailabilityPromise = null;
+                throw error;
+            }
+        }
+
+        async function fetchPokemonCardAvailability(pokemonId) {
+            const container = document.getElementById('card-availability-container');
+            const variantSelect = document.getElementById('modal-variant');
+            variantSelect.replaceChildren(new Option('Loading available rarities...', ''));
+            variantSelect.disabled = true;
+            container.replaceChildren();
+            const loading = document.createElement('div');
+            loading.className = 'loading-sets';
+            loading.textContent = 'Loading card availability...';
+            container.appendChild(loading);
+
+            try {
+                const data = await loadPokemonCardAvailability();
+                if (currentModalId !== pokemonId) return;
+                renderPokemonCardAvailability(data.pokemon[String(pokemonId)], pokemonId);
+            } catch (error) {
+                console.error('Could not load Pokémon card availability', error);
+                if (currentModalId !== pokemonId) return;
+                variantSelect.replaceChildren(new Option('Could not load available rarities', ''));
+                const message = document.createElement('div');
+                message.className = 'loading-sets';
+                message.textContent = `Could not load card availability: ${error.message}`;
+                container.replaceChildren(message);
+            }
+        }
+
+        function renderPokemonCardAvailability(entry, pokemonId) {
+            const container = document.getElementById('card-availability-container');
+            const variantSelect = document.getElementById('modal-variant');
+            variantSelect.replaceChildren();
+            container.replaceChildren();
+            if (!entry) {
+                variantSelect.appendChild(new Option('No availability data found', ''));
+                variantSelect.disabled = true;
+                const message = document.createElement('div');
+                message.className = 'loading-sets';
+                message.textContent = 'No availability entry found for this Pokémon.';
+                container.replaceChildren(message);
+                return;
+            }
+
+            const subtypeSelect = document.createElement('select');
+            subtypeSelect.className = 'modal-select';
+            subtypeSelect.setAttribute('aria-label', 'Available card subtypes');
+            const availableRarities = Array.isArray(entry.rarities) ? entry.rarities : [];
+            if (availableRarities.length === 0) {
+                variantSelect.appendChild(new Option('No recorded rarities', ''));
+                variantSelect.disabled = true;
+            } else {
+                variantSelect.appendChild(new Option('Select a rarity...', ''));
+                for (const rarity of availableRarities) {
+                    variantSelect.appendChild(new Option(rarity, rarity));
+                }
+                variantSelect.value = caughtSet.has(pokemonId) && availableRarities.includes(pokemonVariants[pokemonId])
+                    ? pokemonVariants[pokemonId]
+                    : '';
+                variantSelect.disabled = !caughtSet.has(pokemonId);
+            }
+
+            const availableSubtypes = Array.isArray(entry.subtypes) ? entry.subtypes : [];
+            if (availableSubtypes.length === 0) {
+                subtypeSelect.appendChild(new Option('No recorded card subtypes', ''));
+                subtypeSelect.disabled = true;
+            } else {
+                subtypeSelect.appendChild(new Option('Select a card subtype...', ''));
+                for (const subtype of availableSubtypes) {
+                    subtypeSelect.appendChild(new Option(subtype, subtype));
+                }
+                subtypeSelect.value = caughtSet.has(pokemonId) && availableSubtypes.includes(pokemonCardSubtypes[pokemonId])
+                    ? pokemonCardSubtypes[pokemonId]
+                    : '';
+                subtypeSelect.disabled = !caughtSet.has(pokemonId);
+            }
+            subtypeSelect.addEventListener('change', saveModalCardSubtype);
+            container.appendChild(subtypeSelect);
+
+            const summary = document.createElement('div');
+            summary.className = 'availability-summary';
+            summary.textContent = `${entry.cardCount} known Pokémon card${entry.cardCount === 1 ? '' : 's'}`;
+            container.appendChild(summary);
         }
 
         async function fetchTcgSetsForPokemon(name, id) {
@@ -924,6 +1055,12 @@
             if (caughtSet.has(currentModalId)) caughtSet.delete(currentModalId);
             else caughtSet.add(currentModalId);
 
+            if (!isNowCaught) {
+                delete pokemonVariants[currentModalId];
+                delete pokemonCardSubtypes[currentModalId];
+                localStorage.setItem(STORAGE_KEYS.variants, JSON.stringify(pokemonVariants));
+                localStorage.setItem(STORAGE_KEYS.cardSubtypes, JSON.stringify(pokemonCardSubtypes));
+            }
             localStorage.setItem(STORAGE_KEYS.caught, JSON.stringify(Array.from(caughtSet)));
             updateModalCaughtUI(caughtSet.has(currentModalId));
             renderAppGrid();
@@ -947,13 +1084,30 @@
             btn.classList.toggle('active', isCaught);
             document.getElementById('modal-caught-icon').innerText = isCaught ? '✓' : '☐';
             document.getElementById('modal-caught-text').innerText = isCaught ? 'Caught' : 'Mark Caught';
+            const raritySelect = document.getElementById('modal-variant');
+            raritySelect.disabled = !isCaught || raritySelect.options.length <= 1;
+            const subtypeSelect = document.querySelector('#card-availability-container select');
+            if (subtypeSelect) subtypeSelect.disabled = !isCaught || subtypeSelect.options.length <= 1;
         }
 
         function saveModalVariant() {
-            if (!currentModalId) return;
-            pokemonVariants[currentModalId] = document.getElementById('modal-variant').value;
+            if (!currentModalId || !caughtSet.has(currentModalId)) return;
+            const value = document.getElementById('modal-variant').value;
+            if (value) pokemonVariants[currentModalId] = value;
+            else delete pokemonVariants[currentModalId];
             localStorage.setItem(STORAGE_KEYS.variants, JSON.stringify(pokemonVariants));
             renderAppGrid();
+            pushCloudSync().catch(reportSyncError);
+        }
+
+        function saveModalCardSubtype() {
+            if (!currentModalId || !caughtSet.has(currentModalId)) return;
+            const select = document.querySelector('#card-availability-container select');
+            if (!select) return;
+            const value = select.value;
+            if (value) pokemonCardSubtypes[currentModalId] = value;
+            else delete pokemonCardSubtypes[currentModalId];
+            localStorage.setItem(STORAGE_KEYS.cardSubtypes, JSON.stringify(pokemonCardSubtypes));
             pushCloudSync().catch(reportSyncError);
         }
 
@@ -1137,7 +1291,14 @@
 
         async function pushCloudSync() {
             if (!syncRoomId || !currentUser) return;
-            const payload = { caught: Array.from(caughtSet), variants: pokemonVariants };
+            const caughtIds = new Set(Array.from(caughtSet, String));
+            const caughtVariants = Object.fromEntries(
+                Object.entries(pokemonVariants).filter(([pokemonId, value]) => caughtIds.has(pokemonId) && value)
+            );
+            caughtVariants[CARD_SUBTYPES_SYNC_KEY] = Object.fromEntries(
+                Object.entries(pokemonCardSubtypes).filter(([pokemonId, value]) => caughtIds.has(pokemonId) && value)
+            );
+            const payload = { caught: Array.from(caughtSet), variants: caughtVariants };
             const { data, error } = await supabaseClient
                 .from(SUPABASE_TABLE)
                 .update(payload)
@@ -1156,19 +1317,33 @@
                 .maybeSingle();
             if (error) throw error;
             if (!data) throw new Error('The selected room is unavailable or you are not invited.');
-            if (!Array.isArray(data.caught) || !data.variants || typeof data.variants !== 'object') {
+            if (!Array.isArray(data.caught) || !data.variants || typeof data.variants !== 'object' || Array.isArray(data.variants)) {
                 throw new Error('The Supabase room data has an unexpected format.');
             }
 
             caughtSet = new Set(data.caught);
-            pokemonVariants = data.variants;
+            pokemonVariants = { ...data.variants };
+            pokemonCardSubtypes = pokemonVariants[CARD_SUBTYPES_SYNC_KEY] || {};
+            delete pokemonVariants[CARD_SUBTYPES_SYNC_KEY];
+            if (!pokemonCardSubtypes || typeof pokemonCardSubtypes !== 'object' || Array.isArray(pokemonCardSubtypes)) {
+                throw new Error('The Supabase room card subtype data has an unexpected format.');
+            }
             localStorage.setItem(STORAGE_KEYS.caught, JSON.stringify(Array.from(caughtSet)));
             localStorage.setItem(STORAGE_KEYS.variants, JSON.stringify(pokemonVariants));
+            localStorage.setItem(STORAGE_KEYS.cardSubtypes, JSON.stringify(pokemonCardSubtypes));
+            if (currentModalId) {
+                updateModalCaughtUI(caughtSet.has(currentModalId));
+                await fetchPokemonCardAvailability(currentModalId);
+            }
             renderAppGrid();
         }
 
         function exportSaveData() {
-            const data = JSON.stringify({ caught: Array.from(caughtSet), variants: pokemonVariants }, null, 2);
+            const data = JSON.stringify({
+                caught: Array.from(caughtSet),
+                variants: pokemonVariants,
+                cardSubtypes: pokemonCardSubtypes
+            }, null, 2);
             const blob = new Blob([data], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a'); a.href = url; a.download = 'maxdex_save.json'; a.click();
@@ -1183,8 +1358,10 @@
                     const d = JSON.parse(event.target.result);
                     if (d.caught) caughtSet = new Set(d.caught);
                     if (d.variants) pokemonVariants = d.variants;
+                    if (d.cardSubtypes) pokemonCardSubtypes = d.cardSubtypes;
                     localStorage.setItem(STORAGE_KEYS.caught, JSON.stringify(Array.from(caughtSet)));
                     localStorage.setItem(STORAGE_KEYS.variants, JSON.stringify(pokemonVariants));
+                    localStorage.setItem(STORAGE_KEYS.cardSubtypes, JSON.stringify(pokemonCardSubtypes));
                     renderAppGrid();
                     alert('Save imported successfully!');
                 } catch (err) { alert('Invalid save file.'); }
