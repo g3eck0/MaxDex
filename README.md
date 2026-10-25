@@ -11,6 +11,7 @@ A live cloud-synced Pokédex tracker. Mark Pokémon as caught, share progress wi
 | | |
 |---|---|
 | ✅ **Catch tracker** | Mark Pokémon as caught / not caught across all generations |
+| 📜 **Caught history** | Opens as a separate page to search, sort, and edit caught dates and times, or remove catches with confirmation |
 | 🔄 **Live cloud sync** | Real-time sync via Supabase Realtime |
 | 🚪 **Room sharing** | Create a room and invite friends with a code |
 | 📤 **Import / Export** | Back up and restore your save data as JSON |
@@ -44,7 +45,7 @@ cd MaxDex
 
 In the Supabase dashboard open **SQL Editor**, paste the contents of [`supabase/setup.sql`](./supabase/setup.sql), and click **Run**.
 
-This creates the `gigadex_rooms` table, an auto-update trigger, and Row Level Security policies.
+This creates the `gigadex_rooms` table with the caught timestamp JSON field, an auto-update trigger, and Row Level Security policies. To enable caught-date synchronization for an existing project, run [`supabase/migrations/20261025_add_caught_at.sql`](./supabase/migrations/20261025_add_caught_at.sql) in the Supabase SQL Editor. Existing caught entries without a recorded timestamp appear as **Unknown**.
 
 For instant shared updates, enable `public.gigadex_rooms` in the `supabase_realtime` publication from **Database → Publications** in the Supabase dashboard. The app listens for room changes and no longer polls the database on a timer.
 
@@ -96,6 +97,7 @@ create table gigadex_rooms (
   room_code   text unique not null,
   owner_id    uuid references auth.users(id) on delete cascade,
   caught_data jsonb not null default '{}',
+  caught_at   jsonb not null default '{}',
   created_at  timestamptz not null default now(),
   updated_at  timestamptz not null default now()
 );

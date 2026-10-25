@@ -7,9 +7,14 @@ create table if not exists gigadex_rooms (
   room_code   text unique not null,
   owner_id    uuid references auth.users(id) on delete cascade,
   caught_data jsonb not null default '{}',
+  caught_at   jsonb not null default '{}'::jsonb,
   created_at  timestamptz not null default now(),
   updated_at  timestamptz not null default now()
 );
+
+-- Existing MaxDex room tables also need this field for caught-date synchronization.
+alter table gigadex_rooms
+  add column if not exists caught_at jsonb not null default '{}'::jsonb;
 
 -- Keep updated_at current automatically
 create or replace function update_updated_at()

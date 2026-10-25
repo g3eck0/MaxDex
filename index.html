@@ -24,6 +24,7 @@
             --filter-control-height: 34px;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
+        html { scroll-behavior: smooth; }
         body { background-color: var(--bg-body); color: var(--text-primary); min-height: 100vh; padding-bottom: 80px; }
         
         /* HEADER BAR */
@@ -62,7 +63,7 @@
         }
         .icon-btn:hover { background: var(--bg-card-hover); border-color: var(--accent-primary); }
         .icon-btn.sync-active { background: var(--caught-green); border-color: var(--caught-green); color: white; }
-        .header-menu { position: relative; flex: 0 0 auto; }
+        .header-menu { position: relative; flex: 0 0 auto; margin-right: 4px; }
         .header-menu-toggle { width: 36px; height: 36px; padding: 0; display: grid; place-items: center; }
         .header-menu-icon { display: grid; gap: 4px; }
         .header-menu-icon span { display: block; width: 16px; height: 2px; border-radius: 2px; background: currentColor; }
@@ -78,6 +79,7 @@
         @media (max-width: 480px) {
             .app-header { padding: 5px 8px; }
             .header-content { gap: 6px; }
+            .header-menu { margin-right: 8px; }
             .header-brand-group { gap: 6px; }
             .brand { gap: 6px; }
             .brand-title { font-size: 0.95rem; }
@@ -95,8 +97,28 @@
 
         /* MAIN */
         .main-container { max-width: 1400px; margin: 16px auto; padding: 0 16px; }
+        .search-row {
+            position: sticky; top: 49px; z-index: 90;
+            margin-bottom: 10px; padding: 8px;
+            background: var(--bg-glass); backdrop-filter: blur(16px);
+            border: 1px solid var(--border-color); border-radius: 10px;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+        }
+        .back-to-top {
+            position: fixed; left: 50%; bottom: 14px; z-index: 120;
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 9px 16px; border: 1px solid var(--border-color); border-radius: 999px;
+            background: var(--bg-glass); backdrop-filter: blur(16px); color: var(--text-primary);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+            font-size: 0.78rem; font-weight: 700; cursor: pointer;
+            opacity: 0; pointer-events: none; transform: translate(-50%, 10px);
+            transition: opacity 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+        }
+        .back-to-top.visible { opacity: 1; pointer-events: auto; transform: translate(-50%, 0); }
+        .back-to-top:hover { border-color: var(--accent-primary); }
+        .back-to-top-arrow { color: #93c5fd; font-size: 1rem; line-height: 1; }
         .search-filter-panel {
-            background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 14px; padding: 14px; margin-bottom: 16px; display: flex; flex-direction: column; gap: 10px;
+            background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 14px; padding: 14px 14px 6px; margin-bottom: 16px; display: flex; flex-direction: column; gap: 10px;
         }
         .search-input {
             width: 100%; background: var(--bg-body); border: 1px solid var(--border-color); border-radius: 10px;
@@ -111,7 +133,6 @@
             color: var(--text-secondary); font-size: 1.1rem; line-height: 1; cursor: pointer;
         }
         .search-clear:hover { background: var(--bg-card-hover); color: var(--text-primary); }
-
         .chip-scroll { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; scrollbar-width: none; }
         .chip-scroll::-webkit-scrollbar { display: none; }
         .filter-chip {
@@ -324,6 +345,8 @@
             50% { box-shadow: 0 0 16px rgba(16,185,129,0.6); }
         }
         @media (prefers-reduced-motion: reduce) {
+            html { scroll-behavior: auto; }
+            .back-to-top { transition: none; }
             .poke-card.catch-celebration { animation: caught-card-glow-reduced 700ms ease-in-out 2; }
             .poke-card.catch-celebration::after { animation: caught-check-fade-reduced 700ms ease-in-out 2; }
             .poke-card.catch-celebration .poke-img,
@@ -455,6 +478,7 @@
                 </button>
                 <div class="header-menu-items" id="header-menu-items">
                     <button class="icon-btn" id="sync-status-btn" type="button" onclick="setHeaderMenuOpen(false); openSyncModal()">📡 Live Sync</button>
+                    <button class="icon-btn" type="button" onclick="setHeaderMenuOpen(false); navigateToCaughtHistory()">📜 Caught History</button>
                     <button class="icon-btn" type="button" onclick="setHeaderMenuOpen(false); exportSaveData()">💾 Save</button>
                     <button class="icon-btn" type="button" onclick="setHeaderMenuOpen(false); document.getElementById('import-file').click()">📂 Load</button>
                     <button class="icon-btn" id="sign-out-btn" type="button" onclick="setHeaderMenuOpen(false); signOut()">Sign out</button>
@@ -465,20 +489,19 @@
     </header>
 
     <main class="main-container">
-        <section class="search-filter-panel">
-            <div class="search-row">
-                <div class="search-wrapper">
-                    <input type="text" id="app-search" class="search-input" placeholder="Search by name or #Dex number..." oninput="handleSearchFilter()">
-                    <button type="button" class="search-clear" id="search-clear" aria-label="Clear search" title="Clear search" hidden onclick="clearSearch()">×</button>
-                </div>
-                <label class="sort-control" for="sort-order">
-                    <select class="sort-select" id="sort-order" aria-label="Sort Pokémon" onchange="setSortOrder(this.value)">
-                        <option value="number">Number</option>
-                        <option value="name">Name (A–Z)</option>
-                    </select>
-                </label>
+        <div class="search-row">
+            <div class="search-wrapper">
+                <input type="text" id="app-search" class="search-input" placeholder="Search by name or #Dex number..." oninput="handleSearchFilter()">
+                <button type="button" class="search-clear" id="search-clear" aria-label="Clear search" title="Clear search" hidden onclick="clearSearch()">×</button>
             </div>
-            
+            <label class="sort-control" for="sort-order">
+                <select class="sort-select" id="sort-order" aria-label="Sort Pokémon" onchange="setSortOrder(this.value)">
+                    <option value="number">Number</option>
+                    <option value="name">Name (A–Z)</option>
+                </select>
+            </label>
+        </div>
+        <section class="search-filter-panel" id="pokedex-filters">
             <div class="chip-scroll">
                 <div class="filter-chip status-chip active" data-status="all" onclick="setStatusFilter('all')">All</div>
                 <div class="filter-chip status-chip status-caught" data-status="caught" onclick="setStatusFilter('caught')">✓ Caught</div>
@@ -502,6 +525,11 @@
 
         <div class="pokemon-grid" id="pokemon-grid"></div>
     </main>
+
+    <button class="back-to-top" id="back-to-top" type="button" aria-label="Back to top" onclick="scrollToTop()">
+        <span class="back-to-top-arrow" aria-hidden="true">↑</span>
+        <span>Back to top</span>
+    </button>
 
     <!-- POKEMON DETAIL MODAL -->
     <div class="modal-overlay" id="poke-modal">
@@ -597,6 +625,10 @@
         const SUPABASE_TABLE = 'gigadex_rooms';
         const SUPABASE_PROJECT_URL = SUPABASE_URL.replace(/\/rest\/v1\/?$/, '');
         const supabaseClient = window.supabase.createClient(SUPABASE_PROJECT_URL, SUPABASE_ANON_KEY);
+        localStorage.setItem('maxdex_supabase_config_v1', JSON.stringify({
+            projectUrl: SUPABASE_PROJECT_URL,
+            anonKey: SUPABASE_ANON_KEY
+        }));
         const isInviteLink = window.location.hash.includes('type=invite');
         let passwordSetupRequired = isInviteLink
             || window.location.hash.includes('type=recovery')
@@ -613,6 +645,7 @@
 
         const STORAGE_KEYS = {
             caught: 'maxdex_caught_v5',
+            caughtAt: 'maxdex_caught_at_v1',
             variants: 'maxdex_variants_v5',
             cardSubtypes: 'maxdex_card_subtypes_v1',
             syncRoom: 'maxdex_sync_room',
@@ -635,7 +668,10 @@
             document.getElementById('sort-order').value = activeSort;
         }
 
+        localStorage.setItem('maxdex_pokemon_names_v1', JSON.stringify(rawPokemonData.map(pokemon => pokemon.name)));
         let caughtSet = new Set(JSON.parse(getMigratedStorageValue(STORAGE_KEYS.caught, 'gigadex_caught_v5', '[]')));
+        const savedCaughtAt = JSON.parse(localStorage.getItem(STORAGE_KEYS.caughtAt) || '{}');
+        let caughtAt = savedCaughtAt && typeof savedCaughtAt === 'object' && !Array.isArray(savedCaughtAt) ? savedCaughtAt : {};
         let pokemonVariants = JSON.parse(getMigratedStorageValue(STORAGE_KEYS.variants, 'gigadex_variants_v5', '{}'));
         let pokemonCardSubtypes = JSON.parse(localStorage.getItem(STORAGE_KEYS.cardSubtypes) || '{}');
         let setCache = {};
@@ -869,7 +905,9 @@
         function markPokemonCaught(pokemonId, card) {
             if (caughtSet.has(pokemonId)) return;
             caughtSet.add(pokemonId);
+            caughtAt[pokemonId] = new Date().toISOString();
             localStorage.setItem(STORAGE_KEYS.caught, JSON.stringify(Array.from(caughtSet)));
+            localStorage.setItem(STORAGE_KEYS.caughtAt, JSON.stringify(caughtAt));
             card.classList.add('caught');
             card.classList.remove('catch-celebration');
             void card.offsetWidth;
@@ -1004,7 +1042,7 @@
                 }
                 subtypeSelect.value = caughtSet.has(pokemonId) && availableSubtypes.includes(pokemonCardSubtypes[pokemonId])
                     ? pokemonCardSubtypes[pokemonId]
-                    : '';
+                    : availableSubtypes.length === 1 ? availableSubtypes[0] : '';
                 subtypeSelect.disabled = false;
             }
             subtypeSelect.addEventListener('change', saveModalCardSubtype);
@@ -1191,6 +1229,7 @@
             else caughtSet.add(currentModalId);
 
             if (!isNowCaught) {
+                delete caughtAt[currentModalId];
                 delete pokemonVariants[currentModalId];
                 delete pokemonCardSubtypes[currentModalId];
                 localStorage.setItem(STORAGE_KEYS.variants, JSON.stringify(pokemonVariants));
@@ -1199,6 +1238,7 @@
                 const subtypeSelect = document.querySelector('#card-availability-container select');
                 if (subtypeSelect) subtypeSelect.value = '';
             } else {
+                caughtAt[currentModalId] = new Date().toISOString();
                 const rarity = document.getElementById('modal-variant').value;
                 const subtypeSelect = document.querySelector('#card-availability-container select');
                 if (rarity) pokemonVariants[currentModalId] = rarity;
@@ -1207,6 +1247,7 @@
                 localStorage.setItem(STORAGE_KEYS.cardSubtypes, JSON.stringify(pokemonCardSubtypes));
             }
             localStorage.setItem(STORAGE_KEYS.caught, JSON.stringify(Array.from(caughtSet)));
+            localStorage.setItem(STORAGE_KEYS.caughtAt, JSON.stringify(caughtAt));
             updateModalCaughtUI(caughtSet.has(currentModalId));
             renderAppGrid();
             if (isNowCaught) {
@@ -1222,6 +1263,18 @@
                 }, 1700);
             }
             pushCloudSync().catch(reportSyncError);
+        }
+
+        function navigateToCaughtHistory() {
+            window.location.assign(new URL('caught-history.html', window.location.href).href);
+        }
+
+        function updateBackToTopVisibility() {
+            document.getElementById('back-to-top').classList.toggle('visible', window.scrollY > 300);
+        }
+
+        function scrollToTop() {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         function updateModalCaughtUI(isCaught) {
@@ -1353,7 +1406,8 @@
                 const { error } = await supabaseClient.from(SUPABASE_TABLE).insert({
                     room_id: roomId,
                     caught: [],
-                    variants: {}
+                    variants: {},
+                    caught_at: {}
                 });
                 if (error) throw error;
                 input.value = '';
@@ -1478,7 +1532,13 @@
             caughtVariants[CARD_SUBTYPES_SYNC_KEY] = Object.fromEntries(
                 Object.entries(pokemonCardSubtypes).filter(([pokemonId, value]) => caughtIds.has(pokemonId) && value)
             );
-            const payload = { caught: Array.from(caughtSet), variants: caughtVariants };
+            const payload = {
+                caught: Array.from(caughtSet),
+                variants: caughtVariants,
+                caught_at: Object.fromEntries(
+                    Object.entries(caughtAt).filter(([pokemonId, value]) => caughtIds.has(pokemonId) && value)
+                )
+            };
             const { data, error } = await supabaseClient
                 .from(SUPABASE_TABLE)
                 .update(payload)
@@ -1493,7 +1553,7 @@
             const roomId = syncRoomId;
             const { data, error } = await supabaseClient
                 .from(SUPABASE_TABLE)
-                .select('caught,variants')
+                .select('caught,variants,caught_at')
                 .eq('room_id', roomId)
                 .maybeSingle();
             if (error) throw error;
@@ -1504,6 +1564,13 @@
             }
 
             const nextCaughtSet = new Set(data.caught);
+            if (data.caught_at != null && (typeof data.caught_at !== 'object' || Array.isArray(data.caught_at))) {
+                throw new Error('The Supabase caught timestamp data has an unexpected format.');
+            }
+            const nextCaughtAt = { ...(data.caught_at || {}) };
+            for (const pokemonId of nextCaughtSet) {
+                if (!Object.prototype.hasOwnProperty.call(nextCaughtAt, pokemonId)) nextCaughtAt[pokemonId] = null;
+            }
             const nextVariants = { ...data.variants };
             const nextCardSubtypes = nextVariants[CARD_SUBTYPES_SYNC_KEY] || {};
             delete nextVariants[CARD_SUBTYPES_SYNC_KEY];
@@ -1513,12 +1580,15 @@
             const caughtChanged = !areSetsEqual(caughtSet, nextCaughtSet);
             const variantsChanged = !areRecordsEqual(pokemonVariants, nextVariants);
             const subtypesChanged = !areRecordsEqual(pokemonCardSubtypes, nextCardSubtypes);
-            if (!caughtChanged && !variantsChanged && !subtypesChanged) return;
+            const caughtAtChanged = !areRecordsEqual(caughtAt, nextCaughtAt);
+            if (!caughtChanged && !variantsChanged && !subtypesChanged && !caughtAtChanged) return;
 
             caughtSet = nextCaughtSet;
+            caughtAt = nextCaughtAt;
             pokemonVariants = nextVariants;
             pokemonCardSubtypes = nextCardSubtypes;
             localStorage.setItem(STORAGE_KEYS.caught, JSON.stringify(Array.from(caughtSet)));
+            localStorage.setItem(STORAGE_KEYS.caughtAt, JSON.stringify(caughtAt));
             localStorage.setItem(STORAGE_KEYS.variants, JSON.stringify(pokemonVariants));
             localStorage.setItem(STORAGE_KEYS.cardSubtypes, JSON.stringify(pokemonCardSubtypes));
             if (currentModalId) {
@@ -1531,6 +1601,7 @@
         function exportSaveData() {
             const data = JSON.stringify({
                 caught: Array.from(caughtSet),
+                caughtAt,
                 variants: pokemonVariants,
                 cardSubtypes: pokemonCardSubtypes
             }, null, 2);
@@ -1547,9 +1618,13 @@
                 try {
                     const d = JSON.parse(event.target.result);
                     if (d.caught) caughtSet = new Set(d.caught);
+                    caughtAt = d.caughtAt && typeof d.caughtAt === 'object' && !Array.isArray(d.caughtAt)
+                        ? d.caughtAt
+                        : {};
                     if (d.variants) pokemonVariants = d.variants;
                     if (d.cardSubtypes) pokemonCardSubtypes = d.cardSubtypes;
                     localStorage.setItem(STORAGE_KEYS.caught, JSON.stringify(Array.from(caughtSet)));
+                    localStorage.setItem(STORAGE_KEYS.caughtAt, JSON.stringify(caughtAt));
                     localStorage.setItem(STORAGE_KEYS.variants, JSON.stringify(pokemonVariants));
                     localStorage.setItem(STORAGE_KEYS.cardSubtypes, JSON.stringify(pokemonCardSubtypes));
                     renderAppGrid();
@@ -1721,6 +1796,8 @@
                 toggle.focus();
             }
         });
+        window.addEventListener('scroll', updateBackToTopVisibility, { passive: true });
+        updateBackToTopVisibility();
 
         renderTypeFilters();
         renderAppGrid();

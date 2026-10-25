@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Caught History - MaxDex</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            color-scheme: dark;
+            --bg-body: #0b0f19;
+            --bg-card: #151d2a;
+            --bg-hover: #1c273a;
+            --border: #243146;
+            --text: #f1f5f9;
+            --muted: #94a3b8;
+            --blue: #3b82f6;
+        }
+        * { box-sizing: border-box; }
+        body { margin: 0; min-height: 100vh; padding: 24px; background: var(--bg-body); color: var(--text); font-family: 'Plus Jakarta Sans', sans-serif; }
+        main { width: min(1100px, 100%); margin: 0 auto; }
+        .topbar { display: flex; align-items: center; gap: 14px; margin-bottom: 20px; }
+        h1 { margin: 0; font-size: 1.35rem; }
+        .back-link, .action, .sort-button {
+            border: 1px solid var(--border); border-radius: 8px; background: var(--bg-card); color: var(--text);
+            font: inherit; cursor: pointer;
+        }
+        .back-link, .action { padding: 8px 12px; text-decoration: none; }
+        .back-link:hover, .action:hover, .sort-button:hover { background: var(--bg-hover); border-color: var(--blue); }
+        .search { width: 100%; margin-bottom: 14px; padding: 11px 14px; border: 1px solid var(--border); border-radius: 10px; background: var(--bg-card); color: var(--text); font: inherit; }
+        .search:focus { outline: 2px solid var(--blue); outline-offset: 1px; }
+        .notice { margin: 0 0 12px; color: #fca5a5; }
+        .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 12px; background: var(--bg-card); }
+        table { width: 100%; min-width: 620px; border-collapse: collapse; }
+        th, td { padding: 9px 12px; border-bottom: 1px solid var(--border); text-align: left; white-space: nowrap; }
+        th { color: var(--muted); font-size: .72rem; letter-spacing: .04em; text-transform: uppercase; }
+        tbody tr:last-child td { border-bottom: 0; }
+        .sort-button { padding: 0; border: 0; background: transparent; font: inherit; color: inherit; text-transform: inherit; letter-spacing: inherit; }
+        .pokemon { display: inline-flex; align-items: center; gap: 8px; border: 0; padding: 0; background: transparent; color: inherit; font: inherit; cursor: pointer; }
+        .pokemon:hover { color: #93c5fd; }
+        .pokemon:focus-visible { outline: 2px solid var(--blue); outline-offset: 3px; border-radius: 6px; }
+        .name-link { border: 0; padding: 0; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+        .name-link:hover { color: #93c5fd; text-decoration: underline; }
+        .name-link:focus-visible { outline: 2px solid var(--blue); outline-offset: 3px; border-radius: 3px; }
+        .sprite { width: 36px; height: 36px; object-fit: contain; }
+        .actions { display: flex; gap: 6px; }
+        .action { padding: 5px 8px; }
+        .empty { padding: 24px; text-align: center; color: var(--muted); }
+        dialog { width: min(380px, calc(100% - 32px)); padding: 20px; border: 1px solid var(--border); border-radius: 14px; background: var(--bg-card); color: var(--text); }
+        dialog::backdrop { background: rgba(0,0,0,.72); backdrop-filter: blur(4px); }
+        dialog h2 { margin: 0 0 14px; font-size: 1.1rem; }
+        dialog label { display: block; margin: 10px 0 4px; color: var(--muted); font-size: .75rem; font-weight: 700; }
+        dialog input, dialog select { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-body); color: var(--text); font: inherit; }
+        .dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+        #sync-status { min-height: 1.4em; margin: 10px 0 0; color: var(--muted); font-size: .8rem; }
+        @media (max-width: 520px) { body { padding: 16px 10px; } .topbar { gap: 9px; } h1 { font-size: 1.15rem; } }
+    </style>
+</head>
+<body>
+    <main>
+        <header class="topbar">
+            <a class="back-link" href="index.html" aria-label="Back to Pokédex">← Pokédex</a>
+            <h1>Caught History</h1>
+        </header>
+        <input class="search" id="history-search" type="search" placeholder="Search by number, name, date, or time..." aria-label="Search caught history">
+        <p class="notice" id="history-notice" role="status" hidden></p>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th scope="col" aria-sort="ascending"><button class="sort-button" type="button" data-sort="number"># / Sprite <span></span></button></th>
+                        <th scope="col" aria-sort="none"><button class="sort-button" type="button" data-sort="name">Name <span></span></button></th>
+                        <th scope="col" aria-sort="none"><button class="sort-button" type="button" data-sort="date">Date <span></span></button></th>
+                        <th scope="col" aria-sort="none"><button class="sort-button" type="button" data-sort="time">Time <span></span></button></th>
+                        <th scope="col">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="history-rows"></tbody>
+            </table>
+        </div>
+        <p id="sync-status" role="status" aria-live="polite"></p>
+    </main>
+
+    <dialog id="edit-dialog">
+        <form id="edit-form">
+            <h2 id="edit-title">Edit caught Pokémon</h2>
+            <label for="edit-date">DATE</label>
+            <input id="edit-date" type="date" required>
+            <label for="edit-time">TIME</label>
+            <input id="edit-time" type="time" required>
+            <label for="edit-rarity">CARD RARITY</label>
+            <select id="edit-rarity"></select>
+            <label for="edit-subtype">CARD SUBTYPE</label>
+            <select id="edit-subtype"></select>
+            <div class="dialog-actions">
+                <button class="action" type="button" id="cancel-edit">Cancel</button>
+                <button class="action" id="save-edit" type="submit" disabled>Save</button>
+            </div>
+        </form>
+    </dialog>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        const KEYS = {
+            caught: 'maxdex_caught_v5',
+            caughtAt: 'maxdex_caught_at_v1',
+            variants: 'maxdex_variants_v5',
+            subtypes: 'maxdex_card_subtypes_v1',
+            syncRoom: 'maxdex_sync_room',
+            names: 'maxdex_pokemon_names_v1',
+            config: 'maxdex_supabase_config_v1'
+        };
+        const subtypeSyncKey = '__cardSubtypes';
+        const names = JSON.parse(localStorage.getItem(KEYS.names) || '[]');
+        let caught = new Set(JSON.parse(localStorage.getItem(KEYS.caught) || '[]'));
+        let caughtAt = readObject(KEYS.caughtAt);
+        let variants = readObject(KEYS.variants);
+        let subtypes = readObject(KEYS.subtypes);
+        let sort = { column: 'number', direction: 'asc' };
+        let editingId = null;
+        let syncRoomId = '';
+        let client = null;
+        let availability = null;
+
+        function readObject(key) {
+            const value = JSON.parse(localStorage.getItem(key) || '{}');
+            return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+        }
+
+        function saveLocal() {
+            localStorage.setItem(KEYS.caught, JSON.stringify(Array.from(caught)));
+            localStorage.setItem(KEYS.caughtAt, JSON.stringify(caughtAt));
+            localStorage.setItem(KEYS.variants, JSON.stringify(variants));
+            localStorage.setItem(KEYS.subtypes, JSON.stringify(subtypes));
+        }
+
+        function pokemonName(id) {
+            return names[id - 1] || `Pokémon ${id}`;
+        }
+
+        function caughtDate(id) {
+            const date = new Date(caughtAt[id]);
+            return Number.isNaN(date.getTime()) ? null : date;
+        }
+
+        function displayDate(date, options) {
+            return date ? new Intl.DateTimeFormat(undefined, options).format(date) : 'Unknown';
+        }
+
+        function render() {
+            const query = document.getElementById('history-search').value.trim().toLocaleLowerCase();
+            const entries = Array.from(caught, Number).filter(id => Number.isInteger(id) && id > 0).map(id => ({
+                id,
+                name: pokemonName(id),
+                date: caughtDate(id)
+            })).filter(entry => {
+                const searchableDate = entry.date
+                    ? `${entry.date.toLocaleDateString()} ${entry.date.toLocaleTimeString()} ${entry.date.toISOString()}`
+                    : 'unknown';
+                return `${entry.id} #${String(entry.id).padStart(4, '0')} ${entry.name} ${searchableDate}`
+                    .toLocaleLowerCase().includes(query);
+            });
+
+            entries.sort((a, b) => {
+                let comparison = 0;
+                if (sort.column === 'number') comparison = a.id - b.id;
+                if (sort.column === 'name') comparison = a.name.localeCompare(b.name);
+                if (sort.column === 'date') comparison = (a.date?.getTime() || 0) - (b.date?.getTime() || 0);
+                if (sort.column === 'time') {
+                    const seconds = date => date ? date.getHours() * 3600 + date.getMinutes() * 60 + date.getSeconds() : -1;
+                    comparison = seconds(a.date) - seconds(b.date);
+                }
+                return comparison * (sort.direction === 'asc' ? 1 : -1) || a.id - b.id;
+            });
+
+            document.querySelectorAll('[data-sort]').forEach(button => {
+                const active = button.dataset.sort === sort.column;
+                button.closest('th').setAttribute('aria-sort', active ? (sort.direction === 'asc' ? 'ascending' : 'descending') : 'none');
+                button.querySelector('span').textContent = active ? (sort.direction === 'asc' ? ' ↑' : ' ↓') : '';
+            });
+
+            const tbody = document.getElementById('history-rows');
+            tbody.replaceChildren();
+            if (!entries.length) {
+                const row = tbody.insertRow();
+                const cell = row.insertCell();
+                cell.colSpan = 5;
+                cell.className = 'empty';
+                cell.textContent = query ? 'No caught Pokémon match your search.' : 'No Pokémon caught yet.';
+                return;
+            }
+
+            entries.forEach(entry => {
+                const row = tbody.insertRow();
+                const identity = row.insertCell();
+                const pokemon = document.createElement('button');
+                pokemon.type = 'button';
+                pokemon.className = 'pokemon';
+                const sprite = document.createElement('img');
+                sprite.className = 'sprite';
+                sprite.src = `sprites/${entry.id}.png`;
+                sprite.alt = '';
+                sprite.loading = 'lazy';
+                const number = document.createElement('span');
+                number.textContent = `#${String(entry.id).padStart(4, '0')}`;
+                pokemon.append(sprite, number);
+                pokemon.setAttribute('aria-label', `Edit ${entry.name}, number ${entry.id}`);
+                pokemon.addEventListener('click', () => openEdit(entry.id));
+                identity.appendChild(pokemon);
+                const nameCell = row.insertCell();
+                const nameLink = document.createElement('button');
+                nameLink.type = 'button';
+                nameLink.className = 'name-link';
+                nameLink.textContent = entry.name;
+                nameLink.setAttribute('aria-label', `Edit ${entry.name}`);
+                nameLink.addEventListener('click', () => openEdit(entry.id));
+                nameCell.appendChild(nameLink);
+                row.insertCell().textContent = displayDate(entry.date, { year: 'numeric', month: 'short', day: 'numeric' });
+                row.insertCell().textContent = displayDate(entry.date, { hour: 'numeric', minute: '2-digit' });
+                const actions = row.insertCell();
+                const buttonGroup = document.createElement('div');
+                buttonGroup.className = 'actions';
+                const remove = document.createElement('button');
+                remove.type = 'button';
+                remove.className = 'action';
+                remove.textContent = 'Remove';
+                remove.setAttribute('aria-label', `Remove ${entry.name} from caught list`);
+                remove.addEventListener('click', () => removeCaught(entry.id));
+                buttonGroup.append(remove);
+                actions.appendChild(buttonGroup);
+            });
+        }
+
+        async function loadAvailability() {
+            if (availability) return availability;
+            const response = await fetch(new URL('pokemon-card-availability.json', document.baseURI));
+            if (!response.ok) throw new Error(`Card availability request failed (HTTP ${response.status}).`);
+            const data = await response.json();
+            if (data?.schemaVersion !== 1 || !data.pokemon || typeof data.pokemon !== 'object') {
+                throw new Error('The card availability file has an invalid format.');
+            }
+            availability = data;
+            return data;
+        }
+
+        function populateSelect(select, placeholder, options, selectedValue) {
+            select.replaceChildren(new Option(placeholder, ''));
+            for (const value of options) select.add(new Option(value, value));
+            if (selectedValue && !options.includes(selectedValue)) {
+                select.add(new Option(`${selectedValue} (saved)`, selectedValue));
+            }
+            select.value = selectedValue || '';
+        }
+
+        async function openEdit(id) {
+            editingId = id;
+            const date = caughtDate(id) || new Date();
+            const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString();
+            document.getElementById('edit-title').textContent = `Edit ${pokemonName(id)}`;
+            document.getElementById('edit-date').value = localDate.slice(0, 10);
+            document.getElementById('edit-time').value = localDate.slice(11, 16);
+            const dialog = document.getElementById('edit-dialog');
+            const rarity = document.getElementById('edit-rarity');
+            const subtype = document.getElementById('edit-subtype');
+            const saveButton = document.getElementById('save-edit');
+            rarity.disabled = true;
+            subtype.disabled = true;
+            saveButton.disabled = true;
+            populateSelect(rarity, 'Loading rarities...', [], '');
+            populateSelect(subtype, 'Loading card subtypes...', [], '');
+            dialog.showModal();
+            try {
+                const data = await loadAvailability();
+                if (editingId !== id || !dialog.open) return;
+                const entry = data.pokemon[String(id)];
+                if (!entry) throw new Error(`Card availability was not found for ${pokemonName(id)}.`);
+                populateSelect(rarity, 'No rarity selected', Array.isArray(entry.rarities) ? entry.rarities : [], variants[id] || '');
+                populateSelect(subtype, 'No subtype selected', Array.isArray(entry.subtypes) ? entry.subtypes : [], subtypes[id] || '');
+                rarity.disabled = false;
+                subtype.disabled = false;
+                saveButton.disabled = false;
+            } catch (error) {
+                console.error('Could not load card options for caught history', error);
+                if (editingId === id && dialog.open) {
+                    populateSelect(rarity, 'Could not load rarities', [], '');
+                    populateSelect(subtype, 'Could not load card subtypes', [], '');
+                    document.getElementById('sync-status').textContent = `Could not load card options: ${error.message}`;
+                }
+            }
+        }
+
+        async function saveEdit(event) {
+            event.preventDefault();
+            if (editingId === null) return;
+            const value = new Date(`${document.getElementById('edit-date').value}T${document.getElementById('edit-time').value}`);
+            if (Number.isNaN(value.getTime())) return;
+            caughtAt[editingId] = value.toISOString();
+            const rarity = document.getElementById('edit-rarity').value;
+            const subtype = document.getElementById('edit-subtype').value;
+            if (rarity) variants[editingId] = rarity;
+            else delete variants[editingId];
+            if (subtype) subtypes[editingId] = subtype;
+            else delete subtypes[editingId];
+            saveLocal();
+            document.getElementById('edit-dialog').close();
+            editingId = null;
+            render();
+            try {
+                await pushCloud();
+            } catch (error) {
+                console.error('Could not sync caught Pokémon updates', error);
+                document.getElementById('sync-status').textContent =
+                    `Saved on this device; cloud sync failed: ${error.message}`;
+            }
+        }
+
+        async function removeCaught(id) {
+            if (!window.confirm(`Remove ${pokemonName(id)} from your caught list? This also removes its card selections.`)) return;
+            caught.delete(id);
+            delete caughtAt[id];
+            delete variants[id];
+            delete subtypes[id];
+            saveLocal();
+            render();
+            try {
+                await pushCloud();
+            } catch (error) {
+                console.error('Could not sync caught Pokémon removal', error);
+                document.getElementById('sync-status').textContent =
+                    `Removed on this device; cloud sync failed: ${error.message}`;
+            }
+        }
+
+        async function pushCloud() {
+            if (!client || !syncRoomId) return;
+            const caughtIds = new Set(Array.from(caught, String));
+            const syncedVariants = Object.fromEntries(Object.entries(variants).filter(([id, value]) => caughtIds.has(id) && value));
+            syncedVariants[subtypeSyncKey] = Object.fromEntries(Object.entries(subtypes).filter(([id, value]) => caughtIds.has(id) && value));
+            const { data, error } = await client.from('gigadex_rooms').update({
+                caught: Array.from(caught),
+                variants: syncedVariants,
+                caught_at: Object.fromEntries(Object.entries(caughtAt).filter(([id, value]) => caughtIds.has(id) && value))
+            }).eq('room_id', syncRoomId).select('room_id');
+            if (error) {
+                document.getElementById('sync-status').textContent = `Saved on this device; cloud sync failed: ${error.message}`;
+                return;
+            }
+            if (!data?.length) {
+                document.getElementById('sync-status').textContent = 'Saved on this device; this account no longer has access to its sync room.';
+                return;
+            }
+            document.getElementById('sync-status').textContent = 'Changes synced.';
+        }
+
+        async function initializeSync() {
+            const config = readObject(KEYS.config);
+            if (!config.projectUrl || !config.anonKey || !window.supabase?.createClient) {
+                document.getElementById('sync-status').textContent = 'Showing data saved on this device. Open the Pokédex to initialize cloud sync.';
+                return;
+            }
+            client = window.supabase.createClient(config.projectUrl, config.anonKey);
+            const { data: sessionData, error: sessionError } = await client.auth.getSession();
+            if (sessionError) throw sessionError;
+            if (!sessionData.session) {
+                document.getElementById('sync-status').textContent = 'Showing data saved on this device. Sign in from the Pokédex to sync changes.';
+                return;
+            }
+
+            const { data: rooms, error: roomError } = await client.from('gigadex_rooms').select('room_id').order('room_id');
+            if (roomError) throw roomError;
+            const roomIds = rooms.map(room => room.room_id);
+            const preferredRoom = localStorage.getItem(KEYS.syncRoom);
+            if (preferredRoom && roomIds.includes(preferredRoom)) syncRoomId = preferredRoom;
+            else if (roomIds.length === 1) syncRoomId = roomIds[0];
+            else if (roomIds.length > 1) throw new Error('Multiple rooms are assigned; select a sync room in the Pokédex first.');
+            if (!syncRoomId) {
+                document.getElementById('sync-status').textContent = 'Showing data saved on this device. No sync room is assigned.';
+                return;
+            }
+
+            const { data, error } = await client.from('gigadex_rooms').select('caught,variants,caught_at')
+                .eq('room_id', syncRoomId).maybeSingle();
+            if (error) throw error;
+            if (!data) throw new Error('The assigned sync room is unavailable.');
+            if (!Array.isArray(data.caught) || !data.variants || typeof data.variants !== 'object' || Array.isArray(data.variants)) {
+                throw new Error('The Supabase room data has an unexpected format.');
+            }
+            caught = new Set(data.caught);
+            caughtAt = data.caught_at && typeof data.caught_at === 'object' && !Array.isArray(data.caught_at) ? data.caught_at : {};
+            variants = { ...data.variants };
+            subtypes = variants[subtypeSyncKey] || {};
+            delete variants[subtypeSyncKey];
+            saveLocal();
+            render();
+            document.getElementById('sync-status').textContent = 'Synced with Supabase.';
+        }
+
+        document.getElementById('history-search').addEventListener('input', render);
+        document.querySelectorAll('[data-sort]').forEach(button => {
+            button.addEventListener('click', () => {
+                if (sort.column === button.dataset.sort) sort.direction = sort.direction === 'asc' ? 'desc' : 'asc';
+                else sort = { column: button.dataset.sort, direction: 'asc' };
+                render();
+            });
+        });
+        document.getElementById('edit-form').addEventListener('submit', saveEdit);
+        document.getElementById('cancel-edit').addEventListener('click', () => {
+            editingId = null;
+            document.getElementById('edit-dialog').close();
+        });
+        render();
+        initializeSync().catch(error => {
+            console.error('Caught history sync failed', error);
+            document.getElementById('sync-status').textContent =
+                `Showing data saved on this device; cloud sync failed: ${error.message}`;
+        });
+    </script>
+</body>
+</html>
